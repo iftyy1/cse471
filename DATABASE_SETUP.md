@@ -1,40 +1,37 @@
 # Database Setup Guide
 
-This guide will help you set up PostgreSQL database for the Student Social Media platform.
+This guide will help you set up Neon DB (serverless PostgreSQL) for the Student Social Media platform.
 
 ## Prerequisites
 
-1. PostgreSQL installed on your system
-   - Download from: https://www.postgresql.org/download/
-   - Or use Docker: `docker run --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres`
+1. A Neon DB account
+   - Sign up at: https://neon.tech/
+   - Create a new project and database
 
 ## Setup Steps
 
-### 1. Create Database
+### 1. Create Neon Database
 
-Connect to PostgreSQL and create the database:
-
-```sql
-CREATE DATABASE student_social_media;
-```
+1. Log in to your Neon account
+2. Create a new project
+3. Copy the connection string from your Neon dashboard
 
 ### 2. Configure Environment Variables
 
 Create a `.env.local` file in the root directory:
 
 ```env
-# Database Configuration
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=student_social_media
-DB_USER=postgres
-DB_PASSWORD=postgres
+# Database Configuration (Neon DB)
+DATABASE_URL=postgresql://user:password@host.neon.tech/database?sslmode=require
 
 # JWT Secret (change this in production)
 JWT_SECRET=your-secret-key-change-in-production
 ```
 
-**Important:** Change the `DB_PASSWORD` and `JWT_SECRET` values to secure values in production!
+**Important:** 
+- Replace the `DATABASE_URL` with your actual Neon DB connection string
+- Change the `JWT_SECRET` value to a secure value in production!
+- The connection string should include `?sslmode=require` for secure connections
 
 ### 3. Initialize Database Tables
 
@@ -103,11 +100,7 @@ The application will automatically initialize the database tables on first run.
 
 To verify the database setup:
 
-1. Connect to PostgreSQL:
-```bash
-psql -U postgres -d student_social_media
-```
-
+1. Connect to your Neon database using the connection string from your Neon dashboard
 2. Check if tables exist:
 ```sql
 \dt
@@ -125,13 +118,14 @@ You should see: `users`, `jobs`, and `applications` tables.
 ## Troubleshooting
 
 ### Connection Error
-- Ensure PostgreSQL is running
-- Check if the port (5432) is correct
-- Verify database credentials in `.env.local`
+- Verify the `DATABASE_URL` in `.env.local` is correct
+- Ensure the connection string includes SSL parameters (`?sslmode=require`)
+- Check that your Neon database is active and accessible
+- Verify network connectivity to Neon servers
 
 ### Permission Error
-- Ensure the database user has proper permissions
-- Try: `GRANT ALL PRIVILEGES ON DATABASE student_social_media TO postgres;`
+- Ensure the database user in your Neon connection string has proper permissions
+- Check your Neon project settings for user permissions
 
 ### Tables Not Created
 - Check server logs for errors

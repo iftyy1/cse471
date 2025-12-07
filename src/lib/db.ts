@@ -1,12 +1,11 @@
 import { Pool } from 'pg';
 
 // Database connection pool
+// Uses DATABASE_URL from environment (Neon DB connection string)
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  database: process.env.DB_NAME || 'student_social_media',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
+  connectionString: process.env.DATABASE_URL,
+  // SSL is required for Neon DB connections
+  ssl: process.env.DATABASE_URL ? { rejectUnauthorized: false } : undefined,
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
@@ -14,7 +13,7 @@ const pool = new Pool({
 
 // Test connection
 pool.on('connect', () => {
-  console.log('Connected to PostgreSQL database');
+  console.log('Connected to Neon database');
 });
 
 pool.on('error', (err) => {

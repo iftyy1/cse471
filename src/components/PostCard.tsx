@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface Post {
   id: number;
@@ -18,23 +19,42 @@ interface PostCardProps {
 }
 
 export default function PostCard({ post, onUpdate }: PostCardProps) {
+  const router = useRouter();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes);
   const [commentCount, setCommentCount] = useState(post.comments);
   const [showComments, setShowComments] = useState(false);
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState("");
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    setToken(storedToken);
+  }, []);
 
   const handleLike = async () => {
+    if (!token) {
+      alert("Please login to like posts");
+      router.push("/login?redirect=/");
+      return;
+    }
+
     try {
       const response = await fetch(`/api/posts/${post.id}/like`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
       });
       if (response.ok) {
         const data = await response.json();
         setLiked(data.liked);
         setLikeCount(data.likeCount);
+      } else if (response.status === 401) {
+        alert("Please login to like posts");
+        router.push("/login?redirect=/");
       }
     } catch (error) {
       console.error("Error liking post:", error);
@@ -43,10 +63,20 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
 
   const handleComment = async () => {
     if (!newComment.trim()) return;
+    
+    if (!token) {
+      alert("Please login to comment");
+      router.push("/login?redirect=/");
+      return;
+    }
+
     try {
       const response = await fetch(`/api/posts/${post.id}/comments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ content: newComment }),
       });
       if (response.ok) {
@@ -54,6 +84,9 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
         fetchComments();
         setCommentCount(commentCount + 1);
         onUpdate();
+      } else if (response.status === 401) {
+        alert("Please login to comment");
+        router.push("/login?redirect=/");
       }
     } catch (error) {
       console.error("Error adding comment:", error);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { tutorsData, Tutor } from "@/lib/data";
 
 type DeliveryMode = "In Person" | "Virtual" | "Hybrid";
@@ -10,27 +10,72 @@ export default function TutorPage() {
   const [subjectFilter, setSubjectFilter] = useState("All");
   const [modeFilter, setModeFilter] = useState<DeliveryMode | "All">("All");
   const [joined, setJoined] = useState<Record<number, boolean>>({});
+  const [tutors, setTutors] = useState<Tutor[]>([]);
+
+  useEffect(() => {
+    fetchTutors();
+  }, []);
+
+  const fetchTutors = async () => {
+    try {
+      const response = await fetch("/api/tutors");
+      if (response.ok) {
+        const data = await response.json();
+        setTutors(data);
+      } else {
+        setTutors(tutorsData);
+      }
+    } catch (error) {
+      console.error("Error fetching tutors:", error);
+      setTutors(tutorsData);
+    }
+  };
 
   const uniqueSubjects = useMemo(() => {
     const subjectSet = new Set<string>();
-    tutorsData.forEach((tutor) => tutor.subjects.forEach((subject) => subjectSet.add(subject)));
+    tutors.forEach((tutor) => tutor.subjects.forEach((subject) => subjectSet.add(subject)));
     return ["All", ...Array.from(subjectSet)];
-  }, []);
+  }, [tutors]);
 
   const filteredTutors = useMemo(() => {
-    return tutorsData.filter((tutor) => {
+    return tutors.filter((tutor) => {
       const matchesSubject = subjectFilter === "All" ? true : tutor.subjects.includes(subjectFilter);
       const matchesMode = modeFilter === "All" ? true : tutor.mode === modeFilter;
       return matchesSubject && matchesMode;
     });
-  }, [subjectFilter, modeFilter]);
+  }, [subjectFilter, modeFilter, tutors]);
 
   const toggleDetails = (id: number) => {
     setExpandedId((current) => (current === id ? null : id));
   };
 
-  const handleJoin = (id: number) => {
-    setJoined((prev) => ({ ...prev, [id]: true }));
+  const handleJoin = async (id: number) => {
+    const studentName = prompt("Enter your name:");
+    if (!studentName) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/tutors/${id}/join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ student: studentName }),
+      });
+
+      if (response.ok) {
+        setJoined((prev) => ({ ...prev, [id]: true }));
+        fetchTutors(); // Refresh to update student count
+        alert("Successfully joined the tutor session!");
+      } else {
+        const data = await response.json();
+        alert(data.error || data.message || "Failed to join session");
+      }
+    } catch (error) {
+      console.error("Error joining tutor session:", error);
+      alert("An error occurred. Please try again.");
+    }
   };
 
   return (

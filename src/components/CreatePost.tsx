@@ -1,24 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface CreatePostProps {
   onPostCreated: () => void;
 }
 
 export default function CreatePost({ onPostCreated }: CreatePostProps) {
+  const router = useRouter();
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    setToken(storedToken);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || isSubmitting) return;
 
+    if (!token) {
+      alert("Please login to create a post");
+      router.push("/login?redirect=/");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const response = await fetch("/api/posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ content }),
       });
 
@@ -26,7 +43,13 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
         setContent("");
         onPostCreated();
       } else {
-        alert("Failed to create post. Please try again.");
+        const data = await response.json();
+        if (response.status === 401) {
+          alert("Please login to create a post");
+          router.push("/login?redirect=/");
+        } else {
+          alert(data.error || "Failed to create post. Please try again.");
+        }
       }
     } catch (error) {
       console.error("Error creating post:", error);

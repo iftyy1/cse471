@@ -1,38 +1,156 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { tournamentsData, TournamentStatus } from "@/lib/data";
 
 export default function TournamentPage() {
+  const router = useRouter();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [joined, setJoined] = useState<Record<number, boolean>>({});
   const [filter, setFilter] = useState<TournamentStatus | "All">("All");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [tournaments, setTournaments] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    setToken(storedToken);
+    fetchTournaments();
+  }, []);
+
+  const fetchTournaments = async () => {
+    try {
+      const response = await fetch("/api/tournaments");
+      if (response.ok) {
+        const data = await response.json();
+        setTournaments(data);
+      } else {
+        setTournaments(tournamentsData);
+      }
+    } catch (error) {
+      console.error("Error fetching tournaments:", error);
+      setTournaments(tournamentsData);
+    }
+  };
 
   const filteredTournaments = useMemo(() => {
-    return tournamentsData.filter((tournament) => (filter === "All" ? true : tournament.status === filter));
-  }, [filter]);
+    return tournaments.filter((tournament) => (filter === "All" ? true : tournament.status === filter));
+  }, [filter, tournaments]);
 
   const toggleDetails = (id: number) => {
     setExpandedId((current) => (current === id ? null : id));
   };
 
-  const handleJoin = (id: number) => {
-    setJoined((prev) => ({ ...prev, [id]: true }));
+  const handleJoin = async (id: number) => {
+    const participantName = prompt("Enter your name or team name:");
+    if (!participantName) return;
+
+    try {
+      const response = await fetch(`/api/tournaments/${id}/join`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ participant: participantName }),
+      });
+
+      if (response.ok) {
+        setJoined((prev) => ({ ...prev, [id]: true }));
+        fetchTournaments(); // Refresh to update participant count
+        alert("Successfully joined the tournament!");
+      } else {
+        const data = await response.json();
+        alert(data.error || data.message || "Failed to join tournament");
+      }
+    } catch (error) {
+      console.error("Error joining tournament:", error);
+      alert("An error occurred. Please try again.");
+    }
+  };
+
+  const handleAddTournament = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!token) {
+      alert("Please login to create a tournament");
+      router.push("/login?redirect=/tournaments");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    const rules = formData.get("rules")?.toString().split("\n").filter(r => r.trim()) || [];
+    const tags = formData.get("tags")?.toString().split(",").map(t => t.trim()).filter(t => t) || [];
+
+    try {
+      const response = await fetch("/api/tournaments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: formData.get("title"),
+          organizer: formData.get("organizer"),
+          category: formData.get("category"),
+          location: formData.get("location"),
+          dateRange: formData.get("dateRange"),
+          registrationDeadline: formData.get("registrationDeadline"),
+          prizePool: formData.get("prizePool"),
+          maxParticipants: parseInt(formData.get("maxParticipants")?.toString() || "0"),
+          description: formData.get("description"),
+          rules,
+          tags,
+          status: formData.get("status") || "Upcoming",
+        }),
+      });
+
+      if (response.ok) {
+        setShowAddModal(false);
+        fetchTournaments();
+        alert("Tournament created successfully!");
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to create tournament");
+      }
+    } catch (error) {
+      console.error("Error creating tournament:", error);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-6xl">
-      <div className="mb-8">
-        <p className="text-sm uppercase tracking-wide text-emerald-600 font-semibold">
-          Tournament & Event Management
-        </p>
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mt-1">
-          Track competitions and join upcoming events
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2 max-w-3xl">
-          Browse featured tournaments across campus, monitor enrollment limits, review rules, and join
-          directly. Status indicators keep you up to date on ongoing brackets and registration windows.
-        </p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <p className="text-sm uppercase tracking-wide text-emerald-600 font-semibold">
+            Tournament & Event Management
+          </p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mt-1">
+            Track competitions and join upcoming events
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2 max-w-3xl">
+            Browse featured tournaments across campus, monitor enrollment limits, review rules, and join
+            directly. Status indicators keep you up to date on ongoing brackets and registration windows.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            if (!token) {
+              alert("Please login to create a tournament");
+              router.push("/login?redirect=/tournaments");
+            } else {
+              setShowAddModal(true);
+            }
+          }}
+          className="px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium"
+        >
+          + Add Tournament
+        </button>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
@@ -201,6 +319,186 @@ export default function TournamentPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Add Tournament Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create Tournament</h2>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleAddTournament} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Organizer *
+                    </label>
+                    <input
+                      type="text"
+                      name="organizer"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Category *
+                    </label>
+                    <input
+                      type="text"
+                      name="category"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Location *
+                  </label>
+                  <input
+                    type="text"
+                    name="location"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Date Range *
+                    </label>
+                    <input
+                      type="text"
+                      name="dateRange"
+                      placeholder="e.g. Dec 5 - Dec 7, 2025"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Registration Deadline *
+                    </label>
+                    <input
+                      type="date"
+                      name="registrationDeadline"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Prize Pool *
+                    </label>
+                    <input
+                      type="text"
+                      name="prizePool"
+                      placeholder="e.g. $4,000 cash"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Max Participants *
+                    </label>
+                    <input
+                      type="number"
+                      name="maxParticipants"
+                      min="1"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    rows={4}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Rules (one per line)
+                  </label>
+                  <textarea
+                    name="rules"
+                    rows={3}
+                    placeholder="Rule 1&#10;Rule 2&#10;Rule 3"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Tags (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    name="tags"
+                    placeholder="e.g. Hackathon, Team Event"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="Upcoming">Upcoming</option>
+                    <option value="Ongoing">Ongoing</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Creating..." : "Create Tournament"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       )}
     </div>
