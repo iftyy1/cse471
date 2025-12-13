@@ -18,6 +18,14 @@ export async function initializeDatabase() {
       )
     `);
 
+    // Add new columns to users table if they don't exist
+    try {
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT`);
+      await client.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT`);
+    } catch (e) {
+      console.log('Columns bio or avatar_url might already exist or error adding them', e);
+    }
+
     // Create jobs table
     await client.query(`
       CREATE TABLE IF NOT EXISTS jobs (

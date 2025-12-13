@@ -8,6 +8,7 @@ interface User {
   name: string;
   email: string;
   bio: string;
+  avatarUrl?: string;
   posts: number;
   followers: number;
   following: number;
@@ -21,6 +22,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editBio, setEditBio] = useState("");
+  const [editAvatar, setEditAvatar] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -46,6 +48,7 @@ export default function ProfilePage() {
         setUser(data);
         setEditName(data.name);
         setEditBio(data.bio || "");
+        setEditAvatar(data.avatarUrl || "");
       } else if (response.status === 401) {
         router.push("/login?redirect=/profile");
       } else {
@@ -57,6 +60,12 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateAvatar = () => {
+    const seed = Math.random().toString(36).substring(7);
+    const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+    setEditAvatar(url);
   };
 
   const handleSave = async () => {
@@ -77,6 +86,7 @@ export default function ProfilePage() {
         body: JSON.stringify({
           name: editName,
           bio: editBio,
+          avatarUrl: editAvatar,
         }),
       });
 
@@ -117,8 +127,36 @@ export default function ProfilePage() {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8">
         <div className="flex items-center space-x-6 mb-6">
-          <div className="w-24 h-24 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold text-3xl">
-            {user.name.charAt(0).toUpperCase()}
+          <div className="relative">
+            {isEditing ? (
+               <div className="flex flex-col items-center gap-2">
+                 <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 border-2 border-blue-500">
+                    {editAvatar ? (
+                      <img src={editAvatar} alt="Avatar Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white font-bold text-3xl">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                 </div>
+                 <button 
+                   onClick={generateAvatar}
+                   className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition-colors"
+                 >
+                   🎲 Randomize
+                 </button>
+               </div>
+            ) : (
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-blue-500 flex items-center justify-center text-white font-bold text-3xl">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex-1">
             {isEditing ? (
@@ -149,6 +187,7 @@ export default function ProfilePage() {
                       setIsEditing(false);
                       setEditName(user.name);
                       setEditBio(user.bio || "");
+                      setEditAvatar(user.avatarUrl || "");
                     }}
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >

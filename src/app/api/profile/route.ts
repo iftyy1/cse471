@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
 
     // Get user profile
     const userResult = await query(
-      `SELECT id, name, email, role, created_at FROM users WHERE id = $1`,
+      `SELECT id, name, email, role, bio, avatar_url, created_at FROM users WHERE id = $1`,
       [user.id]
     );
 
@@ -38,7 +38,8 @@ export async function GET(request: NextRequest) {
       name: userData.name,
       email: userData.email,
       role: userData.role,
-      bio: "", // Add bio field to users table if needed
+      bio: userData.bio || "",
+      avatarUrl: userData.avatar_url || "",
       posts,
       followers,
       following,
@@ -64,7 +65,7 @@ export async function PUT(request: NextRequest) {
     const user = requireAuth(request);
 
     const body = await request.json();
-    const { name, bio } = body;
+    const { name, bio, avatarUrl } = body;
 
     if (!name) {
       return NextResponse.json(
@@ -75,9 +76,9 @@ export async function PUT(request: NextRequest) {
 
     // Update user profile
     const result = await query(
-      `UPDATE users SET name = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2
-       RETURNING id, name, email, role, created_at`,
-      [name, user.id]
+      `UPDATE users SET name = $1, bio = $2, avatar_url = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4
+       RETURNING id, name, email, role, bio, avatar_url, created_at`,
+      [name, bio || "", avatarUrl || "", user.id]
     );
 
     if (result.rows.length === 0) {
@@ -98,7 +99,8 @@ export async function PUT(request: NextRequest) {
       name: userData.name,
       email: userData.email,
       role: userData.role,
-      bio: bio || "",
+      bio: userData.bio || "",
+      avatarUrl: userData.avatar_url || "",
       posts,
       followers: 0,
       following: 0,
