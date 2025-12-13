@@ -42,6 +42,10 @@ export default function RegisterPage() {
         // Save token to localStorage
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
+        
+        // Dispatch custom event to update navbar
+        window.dispatchEvent(new Event("authChange"));
+        
         router.push("/");
       } else {
         const data = await response.json();

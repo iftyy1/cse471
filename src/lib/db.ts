@@ -18,7 +18,7 @@ const pool = connectionString
 
 // Test connection
 pool.on('connect', () => {
-  console.log('Connected to PostgreSQL database');
+  console.log('Connected to Neon database');
 });
 
 pool.on('error', (err) => {

@@ -12,20 +12,40 @@ export default function TutorPage() {
   const [subjectFilter, setSubjectFilter] = useState("All");
   const [modeFilter, setModeFilter] = useState<DeliveryMode | "All">("All");
   const [joined, setJoined] = useState<Record<number, boolean>>({});
+  const [tutors, setTutors] = useState<Tutor[]>([]);
+
+  useEffect(() => {
+    fetchTutors();
+  }, []);
+
+  const fetchTutors = async () => {
+    try {
+      const response = await fetch("/api/tutors");
+      if (response.ok) {
+        const data = await response.json();
+        setTutors(data);
+      } else {
+        setTutors(tutorsData);
+      }
+    } catch (error) {
+      console.error("Error fetching tutors:", error);
+      setTutors(tutorsData);
+    }
+  };
 
   const uniqueSubjects = useMemo(() => {
     const subjectSet = new Set<string>();
-    tutorsData.forEach((tutor) => tutor.subjects.forEach((subject) => subjectSet.add(subject)));
+    tutors.forEach((tutor) => tutor.subjects.forEach((subject) => subjectSet.add(subject)));
     return ["All", ...Array.from(subjectSet)];
-  }, []);
+  }, [tutors]);
 
   const filteredTutors = useMemo(() => {
-    return tutorsData.filter((tutor) => {
+    return tutors.filter((tutor) => {
       const matchesSubject = subjectFilter === "All" ? true : tutor.subjects.includes(subjectFilter);
       const matchesMode = modeFilter === "All" ? true : tutor.mode === modeFilter;
       return matchesSubject && matchesMode;
     });
-  }, [subjectFilter, modeFilter]);
+  }, [subjectFilter, modeFilter, tutors]);
 
   const toggleDetails = (id: number) => {
     setExpandedId((current) => (current === id ? null : id));

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface Job {
   id: number;
@@ -19,8 +20,12 @@ interface Job {
 }
 
 export default function JobsPage() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     type: "",
     location: "",
@@ -32,6 +37,11 @@ export default function JobsPage() {
     total: 0,
     totalPages: 0,
   });
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    setToken(storedToken);
+  }, []);
 
   const fetchJobs = async () => {
     setLoading(true);
@@ -82,15 +92,77 @@ export default function JobsPage() {
     return `Up to $${max?.toLocaleString()}`;
   };
 
+  const handleAddJob = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!token) {
+      alert("Please login to create a job posting");
+      router.push("/login?redirect=/jobs");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+
+    try {
+      const response = await fetch("/api/jobs", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: formData.get("title"),
+          company: formData.get("company"),
+          location: formData.get("location"),
+          type: formData.get("type"),
+          description: formData.get("description"),
+          requirements: formData.get("requirements"),
+          salary_min: formData.get("salary_min") ? parseInt(formData.get("salary_min")!.toString()) : null,
+          salary_max: formData.get("salary_max") ? parseInt(formData.get("salary_max")!.toString()) : null,
+          application_deadline: formData.get("application_deadline") || null,
+        }),
+      });
+
+      if (response.ok) {
+        setShowAddModal(false);
+        fetchJobs();
+        alert("Job posted successfully!");
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to post job");
+      }
+    } catch (error) {
+      console.error("Error creating job:", error);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          Internship and Job Opportunities Portal
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Discover exciting career opportunities and internships
-        </p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            Internship and Job Opportunities Portal
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Discover exciting career opportunities and internships
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            if (!token) {
+              alert("Please login to post a job");
+              router.push("/login?redirect=/jobs");
+            } else {
+              setShowAddModal(true);
+            }
+          }}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        >
+          + Add Job
+        </button>
       </div>
 
       {/* Filters */}
@@ -243,6 +315,153 @@ export default function JobsPage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Add Job Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Post a Job</h2>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleAddJob} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Job Title *
+                    </label>
+                    <input
+                      type="text"
+                      name="title"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Company *
+                    </label>
+                    <input
+                      type="text"
+                      name="company"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Location *
+                    </label>
+                    <input
+                      type="text"
+                      name="location"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Type *
+                    </label>
+                    <select
+                      name="type"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Select type</option>
+                      <option value="full-time">Full Time</option>
+                      <option value="part-time">Part Time</option>
+                      <option value="internship">Internship</option>
+                      <option value="contract">Contract</option>
+                      <option value="freelance">Freelance</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Salary Min ($)
+                    </label>
+                    <input
+                      type="number"
+                      name="salary_min"
+                      min="0"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Salary Max ($)
+                    </label>
+                    <input
+                      type="number"
+                      name="salary_max"
+                      min="0"
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Application Deadline
+                  </label>
+                  <input
+                    type="date"
+                    name="application_deadline"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    rows={4}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Requirements *
+                  </label>
+                  <textarea
+                    name="requirements"
+                    rows={4}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Posting..." : "Post Job"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

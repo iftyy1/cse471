@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { posts, comments, getNextCommentId } from "@/lib/data";
+import { query } from "@/lib/db";
+import { getAuthUser } from "@/middleware/auth";
 
 export async function GET(
   request: NextRequest,
@@ -7,12 +8,44 @@ export async function GET(
 ) {
   try {
     const postId = parseInt(params.id);
-    const postComments = comments[postId] || [];
-    return NextResponse.json(postComments);
-  } catch (error) {
+
+    if (isNaN(postId)) {
+      return NextResponse.json(
+        { error: "Invalid post ID" },
+        { status: 400 }
+      );
+    }
+
+    // Verify post exists
+    const postCheck = await query('SELECT id FROM posts WHERE id = $1', [postId]);
+    if (postCheck.rows.length === 0) {
+      return NextResponse.json(
+        { error: "Post not found" },
+        { status: 404 }
+      );
+    }
+
+    // Fetch comments with author info
+    const result = await query(`
+      SELECT 
+        c.id,
+        c.post_id as "postId",
+        c.content,
+        c.created_at as "createdAt",
+        u.id as "authorId",
+        u.name as author
+      FROM comments c
+      INNER JOIN users u ON c.user_id = u.id
+      WHERE c.post_id = $1
+      ORDER BY c.created_at ASC
+    `, [postId]);
+
+    return NextResponse.json(result.rows);
+  } catch (error: any) {
+    console.error("Error fetching comments:", error);
     return NextResponse.json(
-      { error: "Invalid request" },
-      { status: 400 }
+      { error: "Failed to fetch comments" },
+      { status: 500 }
     );
   }
 }
@@ -22,9 +55,24 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const user = getAuthUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const postId = parseInt(params.id);
     const body = await request.json();
     const { content } = body;
+
+    if (isNaN(postId)) {
+      return NextResponse.json(
+        { error: "Invalid post ID" },
+        { status: 400 }
+      );
+    }
 
     if (!content || !content.trim()) {
       return NextResponse.json(
@@ -33,35 +81,44 @@ export async function POST(
       );
     }
 
-    const post = posts.find((p) => p.id === postId);
-    if (!post) {
+    // Verify post exists
+    const postCheck = await query('SELECT id FROM posts WHERE id = $1', [postId]);
+    if (postCheck.rows.length === 0) {
       return NextResponse.json(
         { error: "Post not found" },
         { status: 404 }
       );
     }
 
-    if (!comments[postId]) {
-      comments[postId] = [];
-    }
+    // Insert comment into database
+    const result = await query(
+      `INSERT INTO comments (post_id, user_id, content) 
+       VALUES ($1, $2, $3) 
+       RETURNING id, post_id as "postId", content, created_at as "createdAt"`,
+      [postId, user.id, content.trim()]
+    );
 
-    const newComment = {
-      id: getNextCommentId(),
-      postId,
-      content: content.trim(),
-      author: "Current User", // Replace with actual user from session
-      authorId: 1, // Replace with actual user ID from session
-      createdAt: new Date().toISOString(),
-    };
+    const newComment = result.rows[0];
 
-    comments[postId].push(newComment);
-    post.comments += 1;
+    // Fetch user info for the response
+    const userResult = await query(
+      'SELECT id, name FROM users WHERE id = $1',
+      [user.id]
+    );
 
-    return NextResponse.json(newComment, { status: 201 });
-  } catch (error) {
+    return NextResponse.json({
+      id: newComment.id,
+      postId: newComment.postId,
+      content: newComment.content,
+      author: userResult.rows[0].name,
+      authorId: user.id,
+      createdAt: newComment.createdAt,
+    }, { status: 201 });
+  } catch (error: any) {
+    console.error("Error creating comment:", error);
     return NextResponse.json(
-      { error: "Invalid request" },
-      { status: 400 }
+      { error: "Failed to create comment" },
+      { status: 500 }
     );
   }
 }

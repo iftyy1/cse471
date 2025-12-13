@@ -12,7 +12,7 @@ A modern social media platform built with Next.js, TypeScript, and Tailwind CSS,
 - 📝 **Job Applications**: Apply to jobs with cover letters and resume links
 - 👤 **User Profiles**: View and manage your profile
 - 🔐 **Authentication**: Secure JWT-based authentication system
-- 🗄️ **PostgreSQL Database**: Robust database with proper relationships
+- 🗄️ **Neon DB (Serverless PostgreSQL)**: Robust cloud database with proper relationships
 - 🎨 **Modern UI**: Beautiful, responsive design with dark mode support
 
 ## Tech Stack
@@ -21,7 +21,7 @@ A modern social media platform built with Next.js, TypeScript, and Tailwind CSS,
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
 - **Runtime**: Bun
-- **Database**: PostgreSQL
+- **Database**: Neon DB (Serverless PostgreSQL)
 - **Authentication**: JWT (JSON Web Tokens)
 - **API**: REST API with Next.js API Routes
 
@@ -32,8 +32,9 @@ A modern social media platform built with Next.js, TypeScript, and Tailwind CSS,
 - [Bun](https://bun.sh/) installed on your system
   - Install from: https://bun.sh/
   - Or via PowerShell: `powershell -c "irm bun.sh/install.ps1 | iex"`
-- [PostgreSQL](https://www.postgresql.org/download/) installed and running
-  - Or use Docker: `docker run --name postgres -e POSTGRES_PASSWORD=postgres -p 5432:5432 -d postgres`
+- [Neon DB](https://neon.tech/) account (free tier available)
+  - Sign up at: https://neon.tech/
+  - Create a new project and database
 
 ### Installation
 
@@ -43,9 +44,10 @@ bun install
 ```
 
 2. Set up the database:
-   - Create a PostgreSQL database named `student_social_media`
-   - Create a `.env.local` file in the root directory (see `.env.local.example`)
-   - Configure your database credentials in `.env.local`
+   - Create a Neon DB account and project
+   - Copy your Neon database connection string
+   - Create a `.env.local` file in the root directory
+   - Add `DATABASE_URL=your-neon-connection-string` to `.env.local`
 
 3. Run the development server:
 ```bash

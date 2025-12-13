@@ -314,7 +314,7 @@ All endpoints may return the following error responses:
 
 ## Database Initialization
 
-Before using the API, make sure your PostgreSQL database is set up. You can initialize the database tables by:
+Before using the API, make sure your Neon DB (PostgreSQL) database is set up. You can initialize the database tables by:
 
 1. Making a GET request to `/api/init-db` (optional - tables auto-create on first use)
 2. Or manually running the SQL from `DATABASE_SETUP.md`
@@ -694,5 +694,5 @@ These endpoints let the frontend assemble a personalized dashboard depending on 
 - Application statuses: `pending`, `accepted`, `rejected`
 - JWT tokens expire after 7 days
 - Passwords are hashed using bcrypt
-- Database uses PostgreSQL with proper foreign key constraints
+- Database uses Neon DB (PostgreSQL) with proper foreign key constraints
 

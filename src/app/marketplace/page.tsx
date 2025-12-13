@@ -1,40 +1,135 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { marketplaceListings, MarketplaceListing } from "@/lib/data";
 
 export default function MarketplacePage() {
+  const router = useRouter();
   const [expandedListingId, setExpandedListingId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"All" | "Book" | "Notes">("All");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [listings, setListings] = useState<MarketplaceListing[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    setToken(storedToken);
+    fetchListings();
+  }, []);
+
+  const fetchListings = async () => {
+    try {
+      const response = await fetch("/api/marketplace");
+      if (response.ok) {
+        const data = await response.json();
+        setListings(data);
+      } else {
+        setListings(marketplaceListings);
+      }
+    } catch (error) {
+      console.error("Error fetching listings:", error);
+      setListings(marketplaceListings);
+    }
+  };
 
   const filteredListings = useMemo(() => {
-    return marketplaceListings.filter((listing) => {
+    return listings.filter((listing) => {
       const matchesSearch =
         listing.title.toLowerCase().includes(search.toLowerCase()) ||
         listing.course.toLowerCase().includes(search.toLowerCase());
       const matchesType = typeFilter === "All" ? true : listing.type === typeFilter;
       return matchesSearch && matchesType;
     });
-  }, [search, typeFilter]);
+  }, [search, typeFilter, listings]);
 
   const toggleDetails = (id: number) => {
     setExpandedListingId((current) => (current === id ? null : id));
   };
 
+  const handleAddListing = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!token) {
+      alert("Please login to create a listing");
+      router.push("/login?redirect=/marketplace");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const formData = new FormData(e.currentTarget);
+    const deliveryOptions = formData.get("deliveryOptions")?.toString().split("\n").filter(o => o.trim()) || [];
+    const highlights = formData.get("highlights")?.toString().split("\n").filter(h => h.trim()) || [];
+
+    try {
+      const response = await fetch("/api/marketplace", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: formData.get("title"),
+          type: formData.get("type"),
+          course: formData.get("course"),
+          price: parseFloat(formData.get("price")!.toString()),
+          condition: formData.get("condition"),
+          location: formData.get("location"),
+          deliveryOptions,
+          description: formData.get("description"),
+          highlights,
+          contactEmail: formData.get("contactEmail"),
+          previewPages: formData.get("previewPages") ? parseInt(formData.get("previewPages")!.toString()) : 0,
+          sellerName: formData.get("sellerName"),
+          sellerYear: formData.get("sellerYear"),
+        }),
+      });
+
+      if (response.ok) {
+        setShowAddModal(false);
+        fetchListings();
+        alert("Listing created successfully!");
+      } else {
+        const data = await response.json();
+        alert(data.error || "Failed to create listing");
+      }
+    } catch (error) {
+      console.error("Error creating listing:", error);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-10 max-w-6xl">
-      <div className="mb-8">
-        <p className="text-sm uppercase tracking-wide text-blue-600 font-semibold">
-          Book & Notes Marketplace
-        </p>
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mt-1">
-          Trade study materials with trusted classmates
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2 max-w-3xl">
-          Browse curated listings for textbooks, lab notebooks, and exam-ready notes. Each listing
-          includes seller details, delivery options, and quick links to contact the seller directly.
-        </p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <p className="text-sm uppercase tracking-wide text-blue-600 font-semibold">
+            Book & Notes Marketplace
+          </p>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mt-1">
+            Trade study materials with trusted classmates
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2 max-w-3xl">
+            Browse curated listings for textbooks, lab notebooks, and exam-ready notes. Each listing
+            includes seller details, delivery options, and quick links to contact the seller directly.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            if (!token) {
+              alert("Please login to create a listing");
+              router.push("/login?redirect=/marketplace");
+            } else {
+              setShowAddModal(true);
+            }
+          }}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+        >
+          + Add Listing
+        </button>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8">
@@ -178,6 +273,199 @@ export default function MarketplacePage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Add Listing Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Create Listing</h2>
+                <button
+                  onClick={() => setShowAddModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleAddListing} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Title *
+                  </label>
+                  <input
+                    type="text"
+                    name="title"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Type *
+                    </label>
+                    <select
+                      name="type"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    >
+                      <option value="">Select type</option>
+                      <option value="Book">Book</option>
+                      <option value="Notes">Notes</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Course *
+                    </label>
+                    <input
+                      type="text"
+                      name="course"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Price ($) *
+                    </label>
+                    <input
+                      type="number"
+                      name="price"
+                      step="0.01"
+                      min="0"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Condition *
+                    </label>
+                    <input
+                      type="text"
+                      name="condition"
+                      placeholder="e.g. Like New, Good"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Location *
+                  </label>
+                  <input
+                    type="text"
+                    name="location"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Seller Name *
+                    </label>
+                    <input
+                      type="text"
+                      name="sellerName"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      Seller Year *
+                    </label>
+                    <input
+                      type="text"
+                      name="sellerYear"
+                      placeholder="e.g. Sophomore • Computer Science"
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Contact Email *
+                  </label>
+                  <input
+                    type="email"
+                    name="contactEmail"
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    name="description"
+                    rows={4}
+                    required
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Delivery Options (one per line)
+                  </label>
+                  <textarea
+                    name="deliveryOptions"
+                    rows={3}
+                    placeholder="Option 1&#10;Option 2"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Highlights (one per line)
+                  </label>
+                  <textarea
+                    name="highlights"
+                    rows={3}
+                    placeholder="Highlight 1&#10;Highlight 2"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Preview Pages
+                  </label>
+                  <input
+                    type="number"
+                    name="previewPages"
+                    min="0"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddModal(false)}
+                    className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Creating..." : "Create Listing"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
         </div>
       )}
     </div>

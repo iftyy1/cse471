@@ -32,6 +32,9 @@ export default function LoginPage() {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         
+        // Dispatch custom event to update navbar
+        window.dispatchEvent(new Event("authChange"));
+        
         // Redirect to the specified page or home
         const redirect = searchParams.get("redirect") || "/";
         router.push(redirect);

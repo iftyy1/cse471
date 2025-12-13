@@ -1,43 +1,77 @@
 import { NextRequest, NextResponse } from "next/server";
-import { posts, likes } from "@/lib/data";
+import { query } from "@/lib/db";
+import { getAuthUser } from "@/middleware/auth";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const postId = parseInt(params.id);
-    const userId = 1; // Replace with actual user ID from session
+    const user = getAuthUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-    const post = posts.find((p) => p.id === postId);
-    if (!post) {
+    const postId = parseInt(params.id);
+
+    if (isNaN(postId)) {
+      return NextResponse.json(
+        { error: "Invalid post ID" },
+        { status: 400 }
+      );
+    }
+
+    // Verify post exists
+    const postCheck = await query('SELECT id FROM posts WHERE id = $1', [postId]);
+    if (postCheck.rows.length === 0) {
       return NextResponse.json(
         { error: "Post not found" },
         { status: 404 }
       );
     }
 
-    if (!likes[postId]) {
-      likes[postId] = new Set();
+    // Check if user has already liked this post
+    const likeCheck = await query(
+      'SELECT * FROM post_likes WHERE post_id = $1 AND user_id = $2',
+      [postId, user.id]
+    );
+
+    const hasLiked = likeCheck.rows.length > 0;
+
+    if (hasLiked) {
+      // Unlike: remove the like
+      await query(
+        'DELETE FROM post_likes WHERE post_id = $1 AND user_id = $2',
+        [postId, user.id]
+      );
+    } else {
+      // Like: add the like
+      await query(
+        'INSERT INTO post_likes (post_id, user_id) VALUES ($1, $2)',
+        [postId, user.id]
+      );
     }
 
-    const hasLiked = likes[postId].has(userId);
-    if (hasLiked) {
-      likes[postId].delete(userId);
-      post.likes = Math.max(0, post.likes - 1);
-    } else {
-      likes[postId].add(userId);
-      post.likes += 1;
-    }
+    // Get updated like count
+    const likeCountResult = await query(
+      'SELECT COUNT(*) as count FROM post_likes WHERE post_id = $1',
+      [postId]
+    );
+
+    const likeCount = parseInt(likeCountResult.rows[0].count);
 
     return NextResponse.json({
       liked: !hasLiked,
-      likeCount: post.likes,
+      likeCount: likeCount,
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Error toggling like:", error);
     return NextResponse.json(
-      { error: "Invalid request" },
-      { status: 400 }
+      { error: "Failed to toggle like" },
+      { status: 500 }
     );
   }
 }
