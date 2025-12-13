@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { tutorsData, Tutor } from "@/lib/data";
 
 type DeliveryMode = "In Person" | "Virtual" | "Hybrid";
 
 export default function TutorPage() {
+  const router = useRouter();
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [subjectFilter, setSubjectFilter] = useState("All");
   const [modeFilter, setModeFilter] = useState<DeliveryMode | "All">("All");
@@ -29,8 +31,12 @@ export default function TutorPage() {
     setExpandedId((current) => (current === id ? null : id));
   };
 
-  const handleJoin = (id: number) => {
-    setJoined((prev) => ({ ...prev, [id]: true }));
+  const handleJoin = (tutor: Tutor) => {
+    if (tutor.joinedStudents >= tutor.maxStudents) {
+      setJoined((prev) => ({ ...prev, [tutor.id]: true }));
+    } else {
+      router.push(`/tutors/${tutor.id}/book`);
+    }
   };
 
   return (
@@ -147,13 +153,13 @@ export default function TutorPage() {
                     {isExpanded ? "Hide Details" : "View Details"}
                   </button>
                   <button
-                    onClick={() => handleJoin(tutor.id)}
-                    disabled={isJoined || tutor.joinedStudents >= tutor.maxStudents}
+                    onClick={() => handleJoin(tutor)}
+                    disabled={isJoined}
                     className={`px-5 py-2 rounded-lg font-medium transition-colors ${
                       isJoined
                         ? "bg-gray-200 text-gray-600 cursor-not-allowed dark:bg-gray-700 dark:text-gray-300"
                         : tutor.joinedStudents >= tutor.maxStudents
-                        ? "bg-gray-200 text-gray-600 cursor-not-allowed dark:bg-gray-700 dark:text-gray-300"
+                        ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-200"
                         : "bg-purple-600 text-white hover:bg-purple-700"
                     }`}
                   >

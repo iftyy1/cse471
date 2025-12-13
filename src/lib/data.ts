@@ -71,22 +71,27 @@ export const chatMessages: ChatMessage[] = [
   },
 ];
 
+export type MarketplaceListingStatus = "active" | "reserved" | "sold" | "archived";
+
 export interface MarketplaceListing {
   id: number;
+  sellerId?: number;
+  seller?: string;
+  sellerYear?: string;
   title: string;
-  type: "Book" | "Notes";
-  course: string;
+  type: string;
+  course?: string;
   price: number;
-  condition: string;
-  location: string;
+  condition?: string;
+  location?: string;
   deliveryOptions: string[];
-  seller: string;
-  sellerYear: string;
-  postedAt: string;
   description: string;
-  highlights: string[];
+  highlights?: string[];
   contactEmail: string;
-  previewPages: number;
+  previewPages?: number;
+  postedAt: string;
+  status: MarketplaceListingStatus;
+  images?: string[];
 }
 
 export const marketplaceListings: MarketplaceListing[] = [
@@ -107,6 +112,7 @@ export const marketplaceListings: MarketplaceListing[] = [
     highlights: ["Midterm-focused summaries", "Formula bank", "Practice problems with solutions"],
     contactEmail: "aisha.rahman@example.edu",
     previewPages: 12,
+    status: "active",
   },
   {
     id: 2,
@@ -125,6 +131,7 @@ export const marketplaceListings: MarketplaceListing[] = [
     highlights: ["Bookmark set", "Exercise solutions", "Protective book cover"],
     contactEmail: "noah.patel@example.edu",
     previewPages: 0,
+    status: "active",
   },
   {
     id: 3,
@@ -143,8 +150,15 @@ export const marketplaceListings: MarketplaceListing[] = [
     highlights: ["Spectra interpretations", "Yield optimization tips", "Lab safety checklist"],
     contactEmail: "leila.chen@example.edu",
     previewPages: 20,
+    status: "active",
   },
 ];
+
+let nextMarketplaceListingId = marketplaceListings.length + 1;
+
+export function getNextMarketplaceListingId() {
+  return nextMarketplaceListingId++;
+}
 
 export type TournamentStatus = "Upcoming" | "Ongoing" | "Completed";
 
@@ -306,6 +320,27 @@ export const tutorsData: Tutor[] = [
   },
 ];
 
+export interface Booking {
+  id: number;
+  tutorId: number;
+  studentId?: number;
+  studentName?: string;
+  startTime: string;
+  durationMinutes: number;
+  hourlyRate: number;
+  total: number;
+  status: "pending" | "confirmed" | "cancelled";
+  createdAt: string;
+}
+
+export const bookings: Booking[] = [];
+
+let nextBookingId = 1;
+
+export function getNextBookingId() {
+  return nextBookingId++;
+}
+
 let nextPostId = 2;
 let nextCommentId = 3;
 let nextChatMessageId = 2;
@@ -348,5 +383,327 @@ export function joinTutorSession(id: number) {
 
   tutor.joinedStudents += 1;
   return { success: true, status: "joined" as const };
+}
+
+export type DashboardRole = "student" | "seller" | "recruiter" | "tutor" | "admin";
+
+export interface DashboardNotification {
+  id: number;
+  message: string;
+  read: boolean;
+}
+
+export interface DashboardOverviewResponse {
+  user: {
+    id: number;
+    name: string;
+    role: string;
+    avatarUrl: string;
+    program: string;
+  };
+  role: string;
+  widgets: Record<string, unknown>;
+  notifications: DashboardNotification[];
+}
+
+const roleOverviewTemplates: Record<
+  DashboardRole,
+  {
+    avatarUrl: string;
+    program: string;
+    widgets: Record<string, unknown>;
+    notifications: DashboardNotification[];
+  }
+> = {
+  student: {
+    avatarUrl: "https://cdn.example.edu/avatars/default-student.png",
+    program: "Undeclared • Student",
+    widgets: {
+      applications: { submitted: 3, interviews: 1 },
+      deadlines: [
+        { label: "OS Final Project", dueDate: "2025-11-25" },
+        { label: "Math 241 Quiz", dueDate: "2025-11-22" },
+      ],
+    },
+    notifications: [
+      { id: 1, message: "Systems Lab checkpoint due tomorrow", read: false },
+      { id: 2, message: "CS Tutoring session confirmed for Friday", read: true },
+    ],
+  },
+  seller: {
+    avatarUrl: "https://cdn.example.edu/avatars/default-seller.png",
+    program: "Mathematics • Sophomore",
+    widgets: {
+      marketplaceStats: { activeListings: 4, pendingInquiries: 3, earningsThisMonth: 142 },
+      recommendedActions: [
+        "Respond to new buyer questions",
+        "Offer finals week discount on Calc bundle",
+      ],
+    },
+    notifications: [{ id: 11, message: "New order for Calculus bundle", read: false }],
+  },
+  recruiter: {
+    avatarUrl: "https://cdn.example.edu/avatars/default-recruiter.png",
+    program: "Career Center • Employer Partner",
+    widgets: {
+      pipeline: { openRoles: 5, newApplicants: 14 },
+      interviews: [
+        { candidate: "Mina Patel", role: "UX Research Intern", when: "2025-11-21T14:00:00Z" },
+      ],
+    },
+    notifications: [{ id: 21, message: "Campus spotlight going live this week", read: true }],
+  },
+  tutor: {
+    avatarUrl: "https://cdn.example.edu/avatars/default-tutor.png",
+    program: "Applied Mathematics • Senior",
+    widgets: {
+      sessions: { upcoming: 2, waitlist: 1 },
+      feedback: { avgRating: 4.9, newReviews: 2 },
+    },
+    notifications: [{ id: 31, message: "New student joined Linear Algebra lab", read: false }],
+  },
+  admin: {
+    avatarUrl: "https://cdn.example.edu/avatars/default-admin.png",
+    program: "Platform Operations",
+    widgets: {
+      platformHealth: { uptime: "99.9%", openIncidents: 0 },
+      reports: { abuseQueue: 1, verifications: 4 },
+    },
+    notifications: [{ id: 41, message: "Weekly KPI digest ready", read: true }],
+  },
+};
+
+export function getDashboardOverviewPayload(user: {
+  id: number;
+  name: string;
+  role: string;
+}): DashboardOverviewResponse {
+  const roleKey = (user.role as DashboardRole) || "student";
+  const template = roleOverviewTemplates[roleKey] || roleOverviewTemplates.student;
+
+  return {
+    user: {
+      id: user.id,
+      name: user.name,
+      role: user.role,
+      avatarUrl: template.avatarUrl,
+      program: template.program,
+    },
+    role: user.role,
+    widgets: template.widgets,
+    notifications: template.notifications,
+  };
+}
+
+export interface DashboardActivity {
+  type: string;
+  title: string;
+  timestamp: string;
+  tags: string[];
+  [key: string]: unknown;
+}
+
+const roleActivityFeed: Record<DashboardRole, DashboardActivity[]> = {
+  student: [
+    {
+      type: "job_application",
+      title: "Application updated: Backend Fellow",
+      jobId: 18,
+      status: "Interview",
+      timestamp: "2025-11-20T09:15:00.000Z",
+      tags: ["jobs", "applications"],
+    },
+    {
+      type: "tournament_deadline",
+      title: "Design Sprint registration closes in 2 days",
+      tournamentId: 205,
+      timestamp: "2025-11-19T21:30:00.000Z",
+      tags: ["tournaments"],
+    },
+  ],
+  seller: [
+    {
+      type: "marketplace_order",
+      title: "New inquiry for CLRS 4th Edition",
+      listingId: 2,
+      buyer: "Maya S.",
+      timestamp: "2025-11-20T10:05:00.000Z",
+      tags: ["marketplace"],
+    },
+    {
+      type: "marketplace_listing",
+      title: "Dorm desk organizer published",
+      listingId: 18,
+      timestamp: "2025-11-18T17:20:00.000Z",
+      tags: ["marketplace"],
+    },
+  ],
+  recruiter: [
+    {
+      type: "job_post",
+      title: "Full-stack Fellow position published",
+      jobId: 44,
+      timestamp: "2025-11-19T20:04:00.000Z",
+      tags: ["jobs"],
+    },
+    {
+      type: "job_application",
+      title: "New applicant for UX Research Intern",
+      jobId: 42,
+      applicant: "Mina Patel",
+      timestamp: "2025-11-20T09:15:00.000Z",
+      tags: ["jobs", "applications"],
+    },
+  ],
+  tutor: [
+    {
+      type: "tutor_session",
+      title: "Alex Kim reserved Sat morning slot",
+      tutorId: 1,
+      timestamp: "2025-11-19T15:00:00.000Z",
+      tags: ["tutoring"],
+    },
+    {
+      type: "tutor_feedback",
+      title: "New review posted for Calculus clinic",
+      rating: 5,
+      timestamp: "2025-11-18T12:30:00.000Z",
+      tags: ["tutoring"],
+    },
+  ],
+  admin: [
+    {
+      type: "report_queue",
+      title: "2 new marketplace reports awaiting review",
+      timestamp: "2025-11-20T08:00:00.000Z",
+      tags: ["admin", "marketplace"],
+    },
+    {
+      type: "system_update",
+      title: "PostgreSQL maintenance scheduled",
+      timestamp: "2025-11-21T02:00:00.000Z",
+      tags: ["admin"],
+    },
+  ],
+};
+
+export function getRoleActivityFeed(role: DashboardRole) {
+  return roleActivityFeed[role] || [];
+}
+
+export interface DashboardPreferences {
+  role: string;
+  defaultTab: string;
+  widgetOrder: string[];
+  notificationsMuted: boolean;
+  updatedAt: string;
+}
+
+export interface DashboardPreferencesInput {
+  defaultTab?: string;
+  widgetOrder?: string[];
+  notificationsMuted?: boolean;
+}
+
+export const DASHBOARD_WIDGET_KEYS = [
+  "applications",
+  "deadlines",
+  "tournaments",
+  "marketplace",
+  "earnings",
+  "inbox",
+] as const;
+
+export const DASHBOARD_TAB_KEYS = ["overview", "jobs", "marketplace", "tutoring", "recruiting", "admin"] as const;
+
+export const DASHBOARD_SUPPORTED_ROLES: DashboardRole[] = ["student", "seller", "recruiter", "tutor", "admin"];
+
+const dashboardPreferencesStore = new Map<number, DashboardPreferences>();
+
+function getDefaultTab(role: string) {
+  switch (role) {
+    case "seller":
+      return "marketplace";
+    case "recruiter":
+      return "recruiting";
+    case "tutor":
+      return "tutoring";
+    case "admin":
+      return "admin";
+    default:
+      return "jobs";
+  }
+}
+
+function buildDefaultPreferences(role: string): DashboardPreferences {
+  return {
+    role,
+    defaultTab: getDefaultTab(role),
+    widgetOrder: Array.from(DASHBOARD_WIDGET_KEYS),
+    notificationsMuted: false,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function sanitizeWidgetOrder(order?: string[]) {
+  if (!order || !Array.isArray(order)) {
+    return Array.from(DASHBOARD_WIDGET_KEYS);
+  }
+
+  const seen = new Set<string>();
+  const sanitized: string[] = [];
+
+  order.forEach((item) => {
+    if (
+      item &&
+      DASHBOARD_WIDGET_KEYS.includes(item as (typeof DASHBOARD_WIDGET_KEYS)[number]) &&
+      !seen.has(item)
+    ) {
+      seen.add(item);
+      sanitized.push(item);
+    }
+  });
+
+  DASHBOARD_WIDGET_KEYS.forEach((item) => {
+    if (!seen.has(item)) {
+      sanitized.push(item);
+    }
+  });
+
+  return sanitized;
+}
+
+export function getDashboardPreferencesForUser(userId: number, role: string) {
+  const existing = dashboardPreferencesStore.get(userId);
+  if (existing) {
+    return existing;
+  }
+
+  const defaults = buildDefaultPreferences(role);
+  dashboardPreferencesStore.set(userId, defaults);
+  return defaults;
+}
+
+export function saveDashboardPreferencesForUser(
+  userId: number,
+  role: string,
+  input: DashboardPreferencesInput
+) {
+  const current = getDashboardPreferencesForUser(userId, role);
+  const nextPreferences: DashboardPreferences = {
+    ...current,
+    role,
+    defaultTab:
+      input.defaultTab && DASHBOARD_TAB_KEYS.includes(input.defaultTab as (typeof DASHBOARD_TAB_KEYS)[number])
+        ? input.defaultTab
+        : current.defaultTab,
+    widgetOrder: input.widgetOrder ? sanitizeWidgetOrder(input.widgetOrder) : current.widgetOrder,
+    notificationsMuted:
+      typeof input.notificationsMuted === "boolean" ? input.notificationsMuted : current.notificationsMuted,
+    updatedAt: new Date().toISOString(),
+  };
+
+  dashboardPreferencesStore.set(userId, nextPreferences);
+  return nextPreferences;
 }
 
