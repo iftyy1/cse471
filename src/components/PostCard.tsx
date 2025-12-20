@@ -123,6 +123,14 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
     });
   };
 
+  const getYoutubeEmbedUrl = (content: string) => {
+    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = content.match(youtubeRegex);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
+  };
+
+  const youtubeEmbedUrl = getYoutubeEmbedUrl(post.content);
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex items-start space-x-4">
@@ -143,6 +151,17 @@ export default function PostCard({ post, onUpdate }: PostCardProps) {
           <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap mb-4">
             {post.content}
           </p>
+          {youtubeEmbedUrl && (
+            <div className="mb-4 aspect-w-16 aspect-h-9">
+              <iframe
+                src={youtubeEmbedUrl}
+                title="YouTube video player"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-64 rounded-lg"
+              ></iframe>
+            </div>
+          )}
           <div className="flex items-center space-x-6 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button
               onClick={handleLike}

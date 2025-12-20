@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 
 interface CreatePostProps {
   onPostCreated: () => void;
+  type?: string;
 }
 
-export default function CreatePost({ onPostCreated }: CreatePostProps) {
+export default function CreatePost({ onPostCreated, type = 'post' }: CreatePostProps) {
   const router = useRouter();
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +37,7 @@ export default function CreatePost({ onPostCreated }: CreatePostProps) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, type }),
       });
 
       if (response.ok) {

@@ -1,10 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getNextMarketplaceListingId, marketplaceListings } from "@/lib/data";
+import { query } from "@/lib/db";
 import { requireAuth } from "@/middleware/auth";
 import { getUserById } from "@/lib/auth";
 
 export async function GET() {
-  return NextResponse.json(marketplaceListings);
+  try {
+    const result = await query(`
+      SELECT 
+        m.*,
+        u.name as seller
+      FROM marketplace_listings m
+      LEFT JOIN users u ON m.created_by = u.id
+      ORDER BY m.created_at DESC
+    `);
+    
+    const listings = result.rows.map(row => ({
+      id: row.id,
+      title: row.title,
+      type: row.type,
+      course: row.course,
+      price: parseFloat(row.price),
+      condition: row.condition,
+      location: row.location,
+      deliveryOptions: row.delivery_options,
+      description: row.description,
+      highlights: row.highlights,
+      contactEmail: row.contact_email,
+      previewPages: row.preview_pages,
+      sellerName: row.seller_name, // Original seller name from form
+      sellerYear: row.seller_year,
+      createdBy: row.created_by,
+      seller: row.seller, // Name from user table
+      createdAt: row.created_at,
+    }));
+
+    return NextResponse.json(listings);
+  } catch (error) {
+    console.error("Error fetching marketplace listings:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -28,95 +62,38 @@ export async function POST(request: NextRequest) {
       description,
       highlights,
       contactEmail,
-      images,
       sellerYear,
       previewPages,
     } = body;
 
-    const requiredFields = { title, type, price, description, contactEmail };
-    const missingFields = Object.entries(requiredFields)
-      .filter(([, value]) => value === undefined || value === null || value === "")
-      .map(([key]) => key);
-
-    if (missingFields.length > 0) {
-      return NextResponse.json(
-        { error: `Missing required fields: ${missingFields.join(", ")}` },
-        { status: 400 }
-      );
-    }
-
-    if (typeof price !== "number" || Number.isNaN(price) || price < 0) {
-      return NextResponse.json(
-        { error: "Price must be a non-negative number" },
-        { status: 400 }
-      );
-    }
-
-    if (images && (!Array.isArray(images) || images.length > 6)) {
-      return NextResponse.json(
-        { error: "You can provide up to 6 image URLs" },
-        { status: 413 }
-      );
-    }
-
-    const normalizedDeliveryOptions =
-      Array.isArray(deliveryOptions) && deliveryOptions.length > 0
-        ? deliveryOptions.map((option: unknown) => String(option))
-        : ["Meet on campus"];
-
-    const normalizedHighlights = Array.isArray(highlights)
-      ? highlights.map((highlight: unknown) => String(highlight)).slice(0, 6)
-      : undefined;
-
-    const normalizedImages = Array.isArray(images)
-      ? images.map((image: unknown) => String(image)).slice(0, 6)
-      : undefined;
-
-    const newListing = {
-      id: getNextMarketplaceListingId(),
-      sellerId: dbUser.id,
-      seller: dbUser.name,
-      sellerYear: sellerYear || "Student Vendor",
-      title: String(title),
-      type: String(type),
-      course: course ? String(course) : undefined,
-      price,
-      condition: condition ? String(condition) : "Gently used",
-      location: location ? String(location) : "Campus",
-      deliveryOptions: normalizedDeliveryOptions,
-      description: String(description),
-      highlights: normalizedHighlights,
-      contactEmail: String(contactEmail),
-      previewPages:
-        typeof previewPages === "number" && previewPages >= 0 ? previewPages : undefined,
-      postedAt: new Date().toISOString(),
-      status: "active" as const,
-      images: normalizedImages,
-    };
-
-    marketplaceListings.push(newListing);
-
-    return NextResponse.json(
-      {
-        id: newListing.id,
-        title: newListing.title,
-        type: newListing.type,
-        price: newListing.price,
-        status: newListing.status,
-        sellerId: newListing.sellerId,
-        createdAt: newListing.postedAt,
-      },
-      { status: 201 }
+    const result = await query(
+      `INSERT INTO marketplace_listings (
+        title, type, course, price, condition, location, 
+        delivery_options, description, highlights, contact_email, 
+        seller_name, seller_year, preview_pages, created_by
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      RETURNING *`,
+      [
+        title,
+        type,
+        course || "",
+        price,
+        condition || "Gently used",
+        location || "Campus",
+        deliveryOptions || ["Meet on campus"],
+        description,
+        highlights || [],
+        contactEmail,
+        dbUser.name,
+        sellerYear || "Student",
+        previewPages || 0,
+        authUser.id
+      ]
     );
-  } catch (error: any) {
-    if (error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
 
+    return NextResponse.json(result.rows[0], { status: 201 });
+  } catch (error) {
     console.error("Error creating marketplace listing:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

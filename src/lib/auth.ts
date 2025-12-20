@@ -46,11 +46,11 @@ export async function getUserById(id: number) {
   return result.rows[0];
 }
 
-export async function createUser(name: string, email: string, password: string, role: string = 'student') {
+export async function createUser(name: string, email: string, password: string, role: string = 'student', requested_role: string | null = null) {
   const hashedPassword = await hashPassword(password);
   const result = await query(
-    'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
-    [name, email, hashedPassword, role]
+    'INSERT INTO users (name, email, password, role, requested_role) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, email, role, requested_role',
+    [name, email, hashedPassword, role, requested_role]
   );
   return result.rows[0];
 }

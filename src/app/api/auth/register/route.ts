@@ -14,6 +14,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check email domain
+    if (!email.endsWith('@g.bracu.ac.bd')) {
+      return NextResponse.json(
+        { error: "Registration is restricted to @g.bracu.ac.bd emails" },
+        { status: 403 }
+      );
+    }
+
+    if (role === 'admin') {
+      return NextResponse.json(
+        { error: "Admin registration is not allowed" },
+        { status: 403 }
+      );
+    }
+
     // Check if user already exists
     const existingUser = await getUserByEmail(email);
     if (existingUser) {
@@ -23,7 +38,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await createUser(name, email, password, role || 'student');
+    let userRole = role || 'student';
+    let requestedRole = null;
+
+    if (userRole === 'student_tutor') {
+      userRole = 'student';
+      requestedRole = 'student_tutor';
+    }
+
+    const user = await createUser(name, email, password, userRole, requestedRole);
     const token = generateToken(user);
 
     return NextResponse.json(

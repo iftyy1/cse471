@@ -6,7 +6,8 @@
     "dev": "bun run --bun next dev -p 1092",
     "build": "bun run --bun next build",
     "start": "bun run --bun next start -p 1092",
-    "lint": "bun run --bun next lint"
+    "lint": "bun run --bun next lint",
+    "db:init": "bun run scripts/init-db.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

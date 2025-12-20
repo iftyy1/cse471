@@ -18,9 +18,15 @@ export default function BookingFlow({ tutor }: { tutor: any }) {
   async function submitBooking() {
     setLoading(true);
     try {
+      const token = localStorage.getItem("token");
+      const headers: any = { "Content-Type": "application/json" };
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
       const res = await fetch("/api/bookings", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: headers,
         body: JSON.stringify({
           tutorId: tutor.id,
           studentName: name || "Anonymous",

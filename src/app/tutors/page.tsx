@@ -13,9 +13,40 @@ export default function TutorPage() {
   const [modeFilter, setModeFilter] = useState<DeliveryMode | "All">("All");
   const [joined, setJoined] = useState<Record<number, boolean>>({});
   const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    name: "",
+    headline: "",
+    description: "",
+    hourlyRate: "",
+    year: "Freshman",
+    mode: "Virtual",
+    availability: "",
+    subjects: "",
+    contactEmail: "",
+    achievements: "",
+  });
 
   useEffect(() => {
-    fetchTutors();
+    const token = localStorage.getItem("token");
+    if (!token) {
+        router.push("/login?redirect=/tutors");
+        return;
+    }
+
+    fetchTutors().finally(() => setIsLoading(false));
+    
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) setUser(JSON.parse(storedUser));
+
+    const handleAuthChange = () => {
+      const u = localStorage.getItem("user");
+      setUser(u ? JSON.parse(u) : null);
+    };
+    window.addEventListener("authChange", handleAuthChange);
+    return () => window.removeEventListener("authChange", handleAuthChange);
   }, []);
 
   const fetchTutors = async () => {
@@ -51,26 +82,288 @@ export default function TutorPage() {
     setExpandedId((current) => (current === id ? null : id));
   };
 
-  const handleJoin = (tutor: Tutor) => {
+  const handleJoin = async (tutor: Tutor) => {
     if (tutor.joinedStudents >= tutor.maxStudents) {
-      setJoined((prev) => ({ ...prev, [tutor.id]: true }));
+      // Join Waitlist
+      try {
+        const token = localStorage.getItem("token");
+        if (!token || !user) {
+            alert("Please login to join the waitlist");
+            return;
+        }
+
+        const res = await fetch(`/api/tutors/${tutor.id}/join`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({ student: user.name })
+        });
+
+        if (res.ok || res.status === 409) {
+            setJoined((prev) => ({ ...prev, [tutor.id]: true }));
+            alert("Added to waitlist!");
+        } else {
+            alert("Failed to join waitlist");
+        }
+      } catch (error) {
+        console.error("Error joining waitlist:", error);
+      }
     } else {
       router.push(`/tutors/${tutor.id}/book`);
     }
   };
 
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch("/api/tutors", {
+        method: "POST",
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
+        },
+        body: JSON.stringify({
+          ...formData,
+          hourlyRate: Number(formData.hourlyRate),
+          subjects: formData.subjects.split(",").map((s) => s.trim()),
+          achievements: formData.achievements.split(",").map((a) => a.trim()),
+        }),
+      });
+
+      if (res.ok) {
+        setIsModalOpen(false);
+        fetchTutors();
+        
+        // Update local user role
+        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+        if (currentUser.role !== 'admin' && currentUser.role !== 'student_tutor') {
+            currentUser.role = 'student_tutor';
+            localStorage.setItem("user", JSON.stringify(currentUser));
+            // Trigger auth change event for Navbar to pick up
+            window.dispatchEvent(new Event("authChange"));
+        }
+
+        alert("Service posted successfully!");
+        setFormData({
+            name: "",
+            headline: "",
+            description: "",
+            hourlyRate: "",
+            year: "Freshman",
+            mode: "Virtual",
+            availability: "",
+            subjects: "",
+            contactEmail: "",
+            achievements: "",
+        });
+      } else {
+        alert("Failed to post service");
+      }
+    } catch (error) {
+      console.error("Error posting service:", error);
+    }
+  };
+
   return (
-    <div className="container mx-auto px-4 py-10 max-w-6xl">
-      <div className="mb-8">
-        <p className="text-sm uppercase tracking-wide text-purple-600 font-semibold">Student Tutors</p>
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mt-1">
-          Join peer-led tutoring cohorts or offer your expertise
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2 max-w-3xl">
-          Discover vetted tutors, check availability, and reserve your spot. Each tutor shares subjects,
-          delivery mode, and capacity so you can quickly match your learning style.
-        </p>
+    <>
+    {isLoading ? (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
       </div>
+    ) : (
+      <>
+    <div className="container mx-auto px-4 py-10 max-w-6xl">
+        <div className="flex justify-between items-start">
+            <div>
+                <p className="text-sm uppercase tracking-wide text-purple-600 font-semibold">Student Tutors</p>
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white mt-1">
+                Join peer-led tutoring cohorts or offer your expertise
+                </h1>
+                <p className="text-gray-600 dark:text-gray-400 mt-2 max-w-3xl">
+                Discover vetted tutors, check availability, and reserve your spot. Each tutor shares subjects,
+                delivery mode, and capacity so you can quickly match your learning style.
+                </p>
+            </div>
+            {user && (
+                <button
+                onClick={() => setIsModalOpen(true)}
+                className="px-6 py-3 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors shadow-sm whitespace-nowrap"
+                >
+                Post Your Service
+                </button>
+            )}
+        </div>
+      </div>
+
+      {isModalOpen && (
+
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Post Tutoring Service</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+                  <input
+                    name="name"
+                    required
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Headline</label>
+                  <input
+                    name="headline"
+                    required
+                    placeholder="e.g. CS Major specializing in Algorithms"
+                    value={formData.headline}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                  />
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea
+                  name="description"
+                  required
+                  rows={3}
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Hourly Rate ($)</label>
+                    <input
+                        name="hourlyRate"
+                        type="number"
+                        required
+                        min="0"
+                        value={formData.hourlyRate}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Year/Level</label>
+                    <select
+                        name="year"
+                        value={formData.year}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    >
+                        <option>Freshman</option>
+                        <option>Sophomore</option>
+                        <option>Junior</option>
+                        <option>Senior</option>
+                        <option>Grad Student</option>
+                    </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mode</label>
+                    <select
+                        name="mode"
+                        value={formData.mode}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    >
+                        <option>Virtual</option>
+                        <option>In Person</option>
+                        <option>Hybrid</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Availability</label>
+                    <input
+                        name="availability"
+                        required
+                        placeholder="e.g. Weekends, Mon/Wed evenings"
+                        value={formData.availability}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                    />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subjects (comma separated)</label>
+                <input
+                    name="subjects"
+                    required
+                    placeholder="Math, Physics, React"
+                    value={formData.subjects}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Email</label>
+                <input
+                    name="contactEmail"
+                    type="email"
+                    required
+                    value={formData.contactEmail}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Achievements (comma separated)</label>
+                <input
+                    name="achievements"
+                    placeholder="Dean's List, Hackathon Winner"
+                    value={formData.achievements}
+                    onChange={handleInputChange}
+                    className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                >
+                  Post Service
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 mb-8 space-y-6">
         <div>
@@ -238,7 +531,9 @@ export default function TutorPage() {
           })}
         </div>
       )}
-    </div>
+      </>
+    )}
+    </>
   );
 }
 

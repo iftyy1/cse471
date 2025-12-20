@@ -14,13 +14,17 @@ interface Post {
   comments: number;
 }
 
-export default function PostFeed() {
+interface PostFeedProps {
+  type?: string;
+}
+
+export default function PostFeed({ type = 'post' }: PostFeedProps) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPosts = async () => {
     try {
-      const response = await fetch("/api/posts");
+      const response = await fetch(`/api/posts?type=${type}`);
       if (response.ok) {
         const data = await response.json();
         setPosts(data);
@@ -34,7 +38,7 @@ export default function PostFeed() {
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [type]);
 
   const handlePostCreated = () => {
     fetchPosts();
@@ -50,11 +54,11 @@ export default function PostFeed() {
 
   return (
     <div className="space-y-6">
-      <CreatePost onPostCreated={handlePostCreated} />
+      <CreatePost onPostCreated={handlePostCreated} type={type} />
       <div className="space-y-4">
         {posts.length === 0 ? (
           <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow">
-            <p className="text-gray-600 dark:text-gray-400">No posts yet. Be the first to share!</p>
+            <p className="text-gray-600 dark:text-gray-400">No {type}s yet. Be the first to share!</p>
           </div>
         ) : (
           posts.map((post) => (

@@ -27,59 +27,78 @@ export default function ProjectShowcase() {
   const [currentTag, setCurrentTag] = useState("");
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem("projects");
-      if (stored) {
-        setProjects(JSON.parse(stored));
-      } else {
-        // Default sample projects if none exist
-        setProjects([
-          {
-            id: 1,
-            title: "Student Social Media",
-            description: "A comprehensive platform for students to connect, share resources, and find opportunities. Built with Next.js and PostgreSQL.",
-            tags: ["Next.js", "TypeScript", "PostgreSQL", "Tailwind"],
-            link: "#",
-            github: "#",
-          },
-          {
-            id: 2,
-            title: "AI Study Buddy",
-            description: "An intelligent chatbot that helps students understand complex topics using the OpenRouter API.",
-            tags: ["AI", "React", "API Integration"],
-            link: "#",
-            github: "#",
-          }
-        ]);
-      }
-    } catch {}
+    fetchProjects();
   }, []);
 
-  useEffect(() => {
-    if (projects.length > 0) {
-      localStorage.setItem("projects", JSON.stringify(projects));
+  const fetchProjects = async () => {
+    try {
+      const res = await fetch("/api/projects");
+      if (res.ok) {
+        setProjects(await res.json());
+      }
+    } catch (error) {
+      console.error("Failed to fetch projects", error);
     }
-  }, [projects]);
-
-  const addProject = () => {
-    if (!newProject.title || !newProject.description) return;
-    
-    const project: Project = {
-      id: Date.now(),
-      title: newProject.title!,
-      description: newProject.description!,
-      tags: newProject.tags || [],
-      link: newProject.link,
-      github: newProject.github,
-      image: `https://api.dicebear.com/7.x/shapes/svg?seed=${newProject.title}`, // Auto-generate avatar/image
-    };
-
-    setProjects([project, ...projects]);
-    resetForm();
   };
 
-  const deleteProject = (id: number) => {
-    setProjects(projects.filter(p => p.id !== id));
+  const addProject = async () => {
+    if (!newProject.title || !newProject.description) return;
+    
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please login to add a project");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: newProject.title,
+          description: newProject.description,
+          tags: newProject.tags || [],
+          link: newProject.link,
+          github: newProject.github,
+          image: newProject.image || `https://api.dicebear.com/7.x/shapes/svg?seed=${newProject.title}`,
+        }),
+      });
+
+      if (res.ok) {
+        const savedProject = await res.json();
+        setProjects([savedProject, ...projects]);
+        resetForm();
+      } else {
+        alert("Failed to add project");
+      }
+    } catch (error) {
+      console.error("Error adding project:", error);
+    }
+  };
+
+  const deleteProject = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this project?")) return;
+
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(`/api/projects/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setProjects(projects.filter(p => p.id !== id));
+      } else {
+        alert("Failed to delete project");
+      }
+    } catch (error) {
+      console.error("Error deleting project:", error);
+    }
   };
 
   const resetForm = () => {

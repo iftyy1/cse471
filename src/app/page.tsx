@@ -1,18 +1,35 @@
-import PostFeed from "@/components/PostFeed";
+"use client";
+
+import { useEffect, useState } from "react";
+import LandingPage from "@/components/LandingPage";
+import DashboardHome from "@/components/DashboardHome";
 
 export default function Home() {
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          Student Social Media
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          Connect, share, and engage with fellow students
-        </p>
-      </div>
-      <PostFeed />
-    </div>
-  );
-}
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  useEffect(() => {
+    // Check for authentication
+    const checkAuth = () => {
+      const token = localStorage.getItem("token");
+      setIsLoggedIn(!!token);
+      setIsLoading(false);
+    };
+
+    checkAuth();
+    
+    // Listen for auth changes to update state immediately if user logs out/in
+    window.addEventListener("authChange", checkAuth);
+    return () => window.removeEventListener("authChange", checkAuth);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  return isLoggedIn ? <DashboardHome /> : <LandingPage />;
+}

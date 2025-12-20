@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
 
     // Get user profile
     const userResult = await query(
-      `SELECT id, name, email, role, bio, avatar_url, created_at FROM users WHERE id = $1`,
+      `SELECT id, name, email, role, bio, avatar_url, is_verified, created_at FROM users WHERE id = $1`,
       [user.id]
     );
 
@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
       role: userData.role,
       bio: userData.bio || "",
       avatarUrl: userData.avatar_url || "",
+      isVerified: userData.is_verified || false,
       posts,
       followers,
       following,
@@ -77,7 +78,7 @@ export async function PUT(request: NextRequest) {
     // Update user profile
     const result = await query(
       `UPDATE users SET name = $1, bio = $2, avatar_url = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4
-       RETURNING id, name, email, role, bio, avatar_url, created_at`,
+       RETURNING id, name, email, role, bio, avatar_url, is_verified, created_at`,
       [name, bio || "", avatarUrl || "", user.id]
     );
 
@@ -101,6 +102,7 @@ export async function PUT(request: NextRequest) {
       role: userData.role,
       bio: userData.bio || "",
       avatarUrl: userData.avatar_url || "",
+      isVerified: userData.is_verified || false,
       posts,
       followers: 0,
       following: 0,

@@ -13,12 +13,25 @@ export default function MarketplacePage() {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("token");
+    if (!storedToken) {
+        router.push("/login?redirect=/marketplace");
+        return;
+    }
     setToken(storedToken);
-    fetchListings();
+    fetchListings().finally(() => setIsLoading(false));
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   const fetchListings = async () => {
     try {
@@ -39,7 +52,7 @@ export default function MarketplacePage() {
     return listings.filter((listing) => {
       const matchesSearch =
         listing.title.toLowerCase().includes(search.toLowerCase()) ||
-        listing.course.toLowerCase().includes(search.toLowerCase());
+        (listing.course?.toLowerCase().includes(search.toLowerCase()) ?? false);
       const matchesType = typeFilter === "All" ? true : listing.type === typeFilter;
       return matchesSearch && matchesType;
     });
@@ -151,7 +164,7 @@ export default function MarketplacePage() {
             </label>
             <select
               value={typeFilter}
-              onChange={(event) => setTypeFilter(event.target.value as MarketplaceListing["type"] | "All")}
+              onChange={(event) => setTypeFilter(event.target.value as "All" | "Book" | "Notes")}
               className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="All">All Listings</option>
@@ -246,7 +259,7 @@ export default function MarketplacePage() {
                       <div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">Preview Pages</p>
                         <p className="text-gray-900 dark:text-white font-medium">
-                          {listing.previewPages > 0 ? `${listing.previewPages}+ sample pages` : "Available on request"}
+                          {listing.previewPages && listing.previewPages > 0 ? `${listing.previewPages}+ sample pages` : "Available on request"}
                         </p>
                       </div>
                       <div>
@@ -258,7 +271,7 @@ export default function MarketplacePage() {
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Highlights</p>
                       <div className="flex flex-wrap gap-2">
-                        {listing.highlights.map((highlight) => (
+                        {(listing.highlights || []).map((highlight) => (
                           <span
                             key={highlight}
                             className="px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-sm"
