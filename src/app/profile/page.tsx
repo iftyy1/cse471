@@ -27,6 +27,11 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [tutorRequests, setTutorRequests] = useState<any[]>([]);
+  const [myTutorProfile, setMyTutorProfile] = useState<any>(null);
+  const [updatingBooking, setUpdatingBooking] = useState<number | null>(null);
+  const [meetLinkModal, setMeetLinkModal] = useState<{ open: boolean; booking: any | null }>({ open: false, booking: null });
+  const [meetLink, setMeetLink] = useState("");
 
   useEffect(() => {
     fetchProfile();
@@ -35,8 +40,104 @@ export default function ProfilePage() {
   useEffect(() => {
     if (user) {
       fetchBookings();
+      fetchTutorRequests();
     }
   }, [user]);
+
+  const fetchTutorRequests = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token || !user) return;
+
+      // First, check if this user has a tutor profile
+      const tutorRes = await fetch(`/api/tutors?user_id=${user.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (tutorRes.ok) {
+        const tutorsData = await tutorRes.json();
+        const myTutor = Array.isArray(tutorsData) 
+          ? tutorsData.find((t: any) => t.createdBy === user.id) 
+          : null;
+
+        if (myTutor) {
+          setMyTutorProfile(myTutor);
+          
+          // Fetch booking requests for this tutor
+          const bookingsRes = await fetch(`/api/bookings?tutor_id=${myTutor.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (bookingsRes.ok) {
+            const requests = await bookingsRes.json();
+            setTutorRequests(requests);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching tutor requests:", error);
+    }
+  };
+
+  const handleAcceptBooking = (booking: any) => {
+    setMeetLinkModal({ open: true, booking });
+    setMeetLink(booking.meet_link || "");
+  };
+
+  const confirmAcceptBooking = async () => {
+    if (!meetLinkModal.booking) return;
+    setUpdatingBooking(meetLinkModal.booking.id);
+    
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/bookings/${meetLinkModal.booking.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: "accepted", meetLink }),
+      });
+
+      if (res.ok) {
+        setMeetLinkModal({ open: false, booking: null });
+        fetchTutorRequests();
+      } else {
+        alert("Failed to accept booking");
+      }
+    } catch (error) {
+      console.error("Error accepting booking:", error);
+    } finally {
+      setUpdatingBooking(null);
+    }
+  };
+
+  const handleRejectBooking = async (bookingId: number) => {
+    if (!confirm("Are you sure you want to reject this booking request?")) return;
+    setUpdatingBooking(bookingId);
+    
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/bookings/${bookingId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: "rejected" }),
+      });
+
+      if (res.ok) {
+        fetchTutorRequests();
+      } else {
+        alert("Failed to reject booking");
+      }
+    } catch (error) {
+      console.error("Error rejecting booking:", error);
+    } finally {
+      setUpdatingBooking(null);
+    }
+  };
 
   const fetchBookings = async () => {
     try {
@@ -387,7 +488,143 @@ export default function ProfilePage() {
              </div>
            )}
         </div>
+
+        {/* Tutor Booking Requests Section - Only show if user has a tutor profile */}
+        {myTutorProfile && (
+          <div className="mt-8 border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                📚 Incoming Tutoring Requests
+              </h2>
+              <span className="text-sm text-gray-500">
+                {tutorRequests.filter(r => r.status === 'pending').length} pending
+              </span>
+            </div>
+            
+            {tutorRequests.length === 0 ? (
+              <p className="text-gray-500">No booking requests yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {tutorRequests.map((request) => (
+                  <div 
+                    key={request.id} 
+                    className={`p-4 rounded-lg border ${
+                      request.status === 'pending' 
+                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700' 
+                        : request.status === 'accepted'
+                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700'
+                        : 'bg-gray-50 dark:bg-gray-700/50 border-gray-200 dark:border-gray-600'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">
+                          Student: {request.student_name || request.student_real_name || 'Anonymous'}
+                        </h3>
+                        {request.student_email && (
+                          <p className="text-sm text-gray-500 dark:text-gray-400">{request.student_email}</p>
+                        )}
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                          📅 {request.start_time ? new Date(request.start_time).toLocaleString() : "Date not set"}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          ⏱️ {request.duration_minutes} minutes • 💵 ${request.total}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Requested: {new Date(request.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <span className={`inline-block px-2 py-1 text-xs font-semibold rounded-full mb-2
+                          ${request.status === 'accepted' ? 'bg-green-100 text-green-800' : 
+                            request.status === 'rejected' ? 'bg-red-100 text-red-800' : 
+                            'bg-yellow-100 text-yellow-800'}`}>
+                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        </span>
+                        
+                        {request.status === 'pending' && (
+                          <div className="flex gap-2 mt-2">
+                            <button
+                              onClick={() => handleAcceptBooking(request)}
+                              disabled={updatingBooking === request.id}
+                              className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={() => handleRejectBooking(request.id)}
+                              disabled={updatingBooking === request.id}
+                              className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                        
+                        {request.status === 'accepted' && request.meet_link && (
+                          <div className="mt-2">
+                            <a 
+                              href={request.meet_link} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium underline"
+                            >
+                              Meeting Link
+                            </a>
+                          </div>
+                        )}
+                        
+                        {request.status === 'accepted' && (
+                          <button
+                            onClick={() => handleAcceptBooking(request)}
+                            className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                          >
+                            Edit Link
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Accept Booking Modal */}
+      {meetLinkModal.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Accept Booking Request</h3>
+            <p className="mb-4 text-gray-600 dark:text-gray-300">
+              Please provide a meeting link for the session (e.g., Google Meet, Zoom, Microsoft Teams).
+            </p>
+            <input
+              type="text"
+              placeholder="https://meet.google.com/abc-defg-hij"
+              value={meetLink}
+              onChange={(e) => setMeetLink(e.target.value)}
+              className="w-full border border-gray-300 dark:border-gray-600 p-2 rounded mb-4 text-gray-900 dark:text-white bg-white dark:bg-gray-700"
+            />
+            <div className="flex justify-end gap-2">
+              <button 
+                onClick={() => setMeetLinkModal({ open: false, booking: null })}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmAcceptBooking}
+                disabled={updatingBooking !== null}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+              >
+                {updatingBooking !== null ? "Saving..." : "Accept & Send Link"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

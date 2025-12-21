@@ -97,19 +97,29 @@ export default function BookingFlow({ tutor }: { tutor: any }) {
 
       {step === 3 && (
         <div className="mt-4 text-center">
-          <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">✓</span>
+          <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-2xl">⏳</span>
           </div>
-          <h4 className="font-bold text-xl mb-2">Booking Confirmed!</h4>
-          <p className="text-gray-600 mb-4">You have successfully booked a session with {tutor.name}.</p>
-          <div className="bg-gray-50 p-4 rounded text-left text-sm mb-4">
+          <h4 className="font-bold text-xl mb-2">Booking Request Sent!</h4>
+          <p className="text-gray-600 mb-4">
+            Your session request has been sent to <strong>{tutor.name}</strong>. 
+            They will review and accept your booking shortly.
+          </p>
+          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded text-left text-sm mb-4">
+            <p className="text-yellow-800 font-medium mb-2">📋 Request Details:</p>
             <p><strong>Date:</strong> {new Date(dateTime).toLocaleString()}</p>
             <p><strong>Duration:</strong> {duration} minutes</p>
             <p><strong>Total:</strong> ${(tutor.hourlyRate * (duration / 60)).toFixed(2)}</p>
+            <p className="mt-2 text-yellow-700 text-xs">
+              <strong>Status:</strong> Pending Approval - You will see updates on your Profile page
+            </p>
           </div>
-          <div className="flex justify-center mt-3">
-            <button onClick={() => window.location.href = '/tutors'} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors">
-              Return to Tutors
+          <div className="flex justify-center gap-3 mt-3">
+            <button onClick={() => window.location.href = '/profile'} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors">
+              View in Profile
+            </button>
+            <button onClick={() => window.location.href = '/tutors'} className="px-4 py-2 border border-gray-300 hover:bg-gray-50 rounded transition-colors">
+              Back to Tutors
             </button>
           </div>
         </div>

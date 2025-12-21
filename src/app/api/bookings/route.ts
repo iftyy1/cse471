@@ -34,22 +34,28 @@ export async function GET(request: NextRequest) {
     // If user is not admin, strict filtering
     if (user) {
         if (user.role !== 'admin') {
-            // Logic: Users can see bookings if they are the student OR if they are the creator of the tutor profile
-            // But checking "creator of tutor profile" requires a join.
-            // Simplified: If they request their own bookings (student_id=me), allow.
-            // If they request bookings for a tutor they own... we need to verify ownership.
+            // Users can see bookings if they are:
+            // 1. The student (student_id matches user.id)
+            // 2. The tutor who owns the tutor profile (created_by matches user.id)
             
-            // For now, let's assume the frontend filters correctly and we trust the params somewhat, 
-            // but ideally we should enforce ownership.
-            // Let's enforce basic visibility:
-            // If filtering by student_id, it must match user.id (unless admin)
             if (studentId && parseInt(studentId) !== user.id) {
                  return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+            }
+            
+            // If filtering by tutor_id, verify the user owns that tutor profile
+            if (tutorId) {
+                const tutorCheck = await query(
+                    `SELECT created_by FROM tutors WHERE id = $1`,
+                    [tutorId]
+                );
+                if (tutorCheck.rows.length === 0 || tutorCheck.rows[0].created_by !== user.id) {
+                    return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+                }
             }
         }
     }
 
-    queryStr += ` ORDER BY b.start_time DESC`;
+    queryStr += ` ORDER BY b.created_at DESC`;
 
     const res = await query(queryStr, params);
     return NextResponse.json(res.rows);

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { tutorsData, Tutor } from "@/lib/data";
+import { Tutor } from "@/lib/data";
 
 type DeliveryMode = "In Person" | "Virtual" | "Hybrid";
 
@@ -55,12 +55,10 @@ export default function TutorPage() {
       if (response.ok) {
         const data = await response.json();
         setTutors(data);
-      } else {
-        setTutors(tutorsData);
       }
     } catch (error) {
       console.error("Error fetching tutors:", error);
-      setTutors(tutorsData);
+      setTutors([]);
     }
   };
 
