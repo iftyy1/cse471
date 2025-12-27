@@ -66,10 +66,7 @@ export default function ResumeBuilder() {
   // Temporary state for new custom section
   const [newCustomSectionTitle, setNewCustomSectionTitle] = useState("");
   
-  // Temporary state for new custom entry (we need to know which section it belongs to, but for simplicity we'll just track one "active" entry being added per section or use a map. 
-  // To keep it simple, we'll use a map of temporary entries or just one global temp entry and a selected section. 
-  // Let's use a simpler approach: A separate component or just inline state for the "currently editing" entry might be complex.
-  // We'll use a map keyed by section ID to store the "new entry" state for that section.
+  // Temporary state for new custom entry
   const [newCustomEntries, setNewCustomEntries] = useState<Record<string, CustomEntry>>({});
 
   const printRef = useRef<HTMLDivElement>(null);
@@ -370,27 +367,27 @@ export default function ResumeBuilder() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input name="fullName" value={personalInfo.fullName} onChange={handleInfoChange} className="w-full p-2 border border-gray-300 rounded-lg" placeholder="John Doe" />
+                <input name="fullName" value={personalInfo.fullName} onChange={handleInfoChange} className="w-full p-2 text-black border border-gray-300 rounded-lg" placeholder="John Doe" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input name="email" value={personalInfo.email} onChange={handleInfoChange} className="w-full p-2 border border-gray-300 rounded-lg" placeholder="john@example.com" />
+                <input name="email" value={personalInfo.email} onChange={handleInfoChange} className="w-full p-2 text-black border border-gray-300 rounded-lg" placeholder="john@example.com" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input name="phone" value={personalInfo.phone} onChange={handleInfoChange} className="w-full p-2 border border-gray-300 rounded-lg" placeholder="+1 (555) 000-0000" />
+                <input name="phone" value={personalInfo.phone} onChange={handleInfoChange} className="w-full p-2 text-black border border-gray-300 rounded-lg" placeholder="+1 (555) 000-0000" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn</label>
-                <input name="linkedin" value={personalInfo.linkedin} onChange={handleInfoChange} className="w-full p-2 border border-gray-300 rounded-lg" placeholder="linkedin.com/in/johndoe" />
+                <input name="linkedin" value={personalInfo.linkedin} onChange={handleInfoChange} className="w-full p-2 text-black border border-gray-300 rounded-lg" placeholder="linkedin.com/in/johndoe" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Portfolio / Website</label>
-                <input name="website" value={personalInfo.website} onChange={handleInfoChange} className="w-full p-2 border border-gray-300 rounded-lg" placeholder="johndoe.com" />
+                <input name="website" value={personalInfo.website} onChange={handleInfoChange} className="w-full p-2 text-black border border-gray-300 rounded-lg" placeholder="johndoe.com" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">Professional Summary</label>
-                <textarea name="summary" value={personalInfo.summary} onChange={handleInfoChange} rows={3} className="w-full p-2 border border-gray-300 rounded-lg" placeholder="Briefly describe your professional background..." />
+                <textarea name="summary" value={personalInfo.summary} onChange={handleInfoChange} rows={3} className="w-full p-2 text-black border border-gray-300 rounded-lg" placeholder="Briefly describe your professional background..." />
               </div>
             </div>
           </section>
@@ -410,9 +407,9 @@ export default function ResumeBuilder() {
                 </div>
               ))}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 border border-dashed border-gray-300 rounded-lg">
-                <input placeholder="School / University" value={newEdu.school} onChange={(e) => setNewEdu({ ...newEdu, school: e.target.value })} className="w-full p-2 border border-gray-300 rounded" />
-                <input placeholder="Degree / Major" value={newEdu.degree} onChange={(e) => setNewEdu({ ...newEdu, degree: e.target.value })} className="w-full p-2 border border-gray-300 rounded" />
-                <input placeholder="Graduation Year" value={newEdu.year} onChange={(e) => setNewEdu({ ...newEdu, year: e.target.value })} className="w-full p-2 border border-gray-300 rounded" />
+                <input placeholder="School / University" value={newEdu.school} onChange={(e) => setNewEdu({ ...newEdu, school: e.target.value })} className="w-full p-2 text-black border border-gray-300 rounded" />
+                <input placeholder="Degree / Major" value={newEdu.degree} onChange={(e) => setNewEdu({ ...newEdu, degree: e.target.value })} className="w-full p-2 text-black border border-gray-300 rounded" />
+                <input placeholder="Graduation Year" value={newEdu.year} onChange={(e) => setNewEdu({ ...newEdu, year: e.target.value })} className="w-full p-2 text-black border border-gray-300 rounded" />
                 <button onClick={addEducation} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">Add</button>
               </div>
             </div>
@@ -432,11 +429,11 @@ export default function ResumeBuilder() {
               ))}
               <div className="space-y-3 p-4 border border-dashed border-gray-300 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input placeholder="Job Title" value={newExp.role} onChange={(e) => setNewExp({ ...newExp, role: e.target.value })} className="w-full p-2 border border-gray-300 rounded" />
-                  <input placeholder="Company" value={newExp.company} onChange={(e) => setNewExp({ ...newExp, company: e.target.value })} className="w-full p-2 border border-gray-300 rounded" />
-                  <input placeholder="Duration" value={newExp.duration} onChange={(e) => setNewExp({ ...newExp, duration: e.target.value })} className="md:col-span-2 w-full p-2 border border-gray-300 rounded" />
+                  <input placeholder="Job Title" value={newExp.role} onChange={(e) => setNewExp({ ...newExp, role: e.target.value })} className="w-full p-2 text-black border border-gray-300 rounded" />
+                  <input placeholder="Company" value={newExp.company} onChange={(e) => setNewExp({ ...newExp, company: e.target.value })} className="w-full p-2 text-black border border-gray-300 rounded" />
+                  <input placeholder="Duration" value={newExp.duration} onChange={(e) => setNewExp({ ...newExp, duration: e.target.value })} className="md:col-span-2 w-full p-2 text-black border border-gray-300 rounded" />
                 </div>
-                <textarea placeholder="Description..." value={newExp.description} onChange={(e) => setNewExp({ ...newExp, description: e.target.value })} rows={3} className="w-full p-2 border border-gray-300 rounded" />
+                <textarea placeholder="Description..." value={newExp.description} onChange={(e) => setNewExp({ ...newExp, description: e.target.value })} rows={3} className="w-full p-2 text-black border border-gray-300 rounded" />
                 <button onClick={addExperience} className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">Add Experience</button>
               </div>
             </div>
@@ -457,11 +454,11 @@ export default function ResumeBuilder() {
               ))}
               <div className="space-y-3 p-4 border border-dashed border-gray-300 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <input placeholder="Project Name" value={newProject.name} onChange={(e) => setNewProject({ ...newProject, name: e.target.value })} className="w-full p-2 border border-gray-300 rounded" />
-                  <input placeholder="Technologies Used" value={newProject.technologies} onChange={(e) => setNewProject({ ...newProject, technologies: e.target.value })} className="w-full p-2 border border-gray-300 rounded" />
-                  <input placeholder="Link (Optional)" value={newProject.link} onChange={(e) => setNewProject({ ...newProject, link: e.target.value })} className="md:col-span-2 w-full p-2 border border-gray-300 rounded" />
+                  <input placeholder="Project Name" value={newProject.name} onChange={(e) => setNewProject({ ...newProject, name: e.target.value })} className="w-full p-2 text-black border border-gray-300 rounded" />
+                  <input placeholder="Technologies Used" value={newProject.technologies} onChange={(e) => setNewProject({ ...newProject, technologies: e.target.value })} className="w-full p-2 text-black border border-gray-300 rounded" />
+                  <input placeholder="Link (Optional)" value={newProject.link} onChange={(e) => setNewProject({ ...newProject, link: e.target.value })} className="md:col-span-2 w-full p-2 text-black border border-gray-300 rounded" />
                 </div>
-                <textarea placeholder="Project Description..." value={newProject.description} onChange={(e) => setNewProject({ ...newProject, description: e.target.value })} rows={3} className="w-full p-2 border border-gray-300 rounded" />
+                <textarea placeholder="Project Description..." value={newProject.description} onChange={(e) => setNewProject({ ...newProject, description: e.target.value })} rows={3} className="w-full p-2 text-black border border-gray-300 rounded" />
                 <button onClick={addProject} className="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">Add Project</button>
               </div>
             </div>
@@ -479,7 +476,7 @@ export default function ResumeBuilder() {
                   </span>
                 ))}
               </div>
-              <input placeholder="Type a skill and press Enter" value={currentSkill} onChange={(e) => setCurrentSkill(e.target.value)} onKeyDown={addSkill} className="w-full p-2 border border-gray-300 rounded" />
+              <input placeholder="Type a skill and press Enter" value={currentSkill} onChange={(e) => setCurrentSkill(e.target.value)} onKeyDown={addSkill} className="w-full p-2 text-black border border-gray-300 rounded" />
             </div>
           </section>
 
@@ -507,12 +504,12 @@ export default function ResumeBuilder() {
 
                  <div className="space-y-2 border-t pt-3">
                     <p className="text-xs font-semibold text-gray-500 uppercase">Add Entry</p>
-                    <input placeholder="Title (e.g. Award Name)" value={newCustomEntries[section.id]?.title || ""} onChange={(e) => updateNewCustomEntry(section.id, 'title', e.target.value)} className="w-full p-2 text-sm border rounded" />
+                    <input placeholder="Title (e.g. Award Name)" value={newCustomEntries[section.id]?.title || ""} onChange={(e) => updateNewCustomEntry(section.id, 'title', e.target.value)} className="w-full p-2 text-black text-sm border rounded" />
                     <div className="grid grid-cols-2 gap-2">
-                       <input placeholder="Subtitle (e.g. Organization)" value={newCustomEntries[section.id]?.subtitle || ""} onChange={(e) => updateNewCustomEntry(section.id, 'subtitle', e.target.value)} className="w-full p-2 text-sm border rounded" />
-                       <input placeholder="Date / Year" value={newCustomEntries[section.id]?.date || ""} onChange={(e) => updateNewCustomEntry(section.id, 'date', e.target.value)} className="w-full p-2 text-sm border rounded" />
+                       <input placeholder="Subtitle (e.g. Organization)" value={newCustomEntries[section.id]?.subtitle || ""} onChange={(e) => updateNewCustomEntry(section.id, 'subtitle', e.target.value)} className="w-full p-2 text-black text-sm border rounded" />
+                       <input placeholder="Date / Year" value={newCustomEntries[section.id]?.date || ""} onChange={(e) => updateNewCustomEntry(section.id, 'date', e.target.value)} className="w-full p-2 text-black text-sm border rounded" />
                     </div>
-                    <textarea placeholder="Description" value={newCustomEntries[section.id]?.description || ""} onChange={(e) => updateNewCustomEntry(section.id, 'description', e.target.value)} rows={2} className="w-full p-2 text-sm border rounded" />
+                    <textarea placeholder="Description" value={newCustomEntries[section.id]?.description || ""} onChange={(e) => updateNewCustomEntry(section.id, 'description', e.target.value)} rows={2} className="w-full p-2 text-black text-sm border rounded" />
                     <button onClick={() => addCustomEntry(section.id)} className="w-full bg-slate-600 text-white text-sm py-1 rounded hover:bg-slate-700">Add Entry</button>
                  </div>
                </div>
@@ -523,7 +520,7 @@ export default function ResumeBuilder() {
                  placeholder="New Section Title (e.g. Awards, Volunteer)" 
                  value={newCustomSectionTitle}
                  onChange={(e) => setNewCustomSectionTitle(e.target.value)}
-                 className="flex-1 p-2 border border-gray-300 rounded"
+                 className="flex-1 p-2 text-black border border-gray-300 rounded"
                />
                <button onClick={addCustomSection} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Add Section</button>
              </div>
@@ -546,26 +543,22 @@ export default function ResumeBuilder() {
 
         <div className="p-8 bg-white min-h-[800px]" ref={printRef} style={{ fontFamily: '"Times New Roman", Times, serif' }}>
           {/* Resume Header */}
-          <div className="text-center border-b-2 border-gray-800 pb-6 mb-6">
+          <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-wider mb-2">
               {personalInfo.fullName || "Your Name"}
             </h1>
-            <div className="flex flex-wrap justify-center gap-3 text-sm text-gray-600">
-              {personalInfo.email && <span>{personalInfo.email}</span>}
-              {personalInfo.email && personalInfo.phone && <span className="text-gray-400">|</span>}
-              {personalInfo.phone && <span>{personalInfo.phone}</span>}
-              {personalInfo.phone && personalInfo.linkedin && <span className="text-gray-400">|</span>}
-              {personalInfo.linkedin && <span>{personalInfo.linkedin}</span>}
-              {personalInfo.linkedin && personalInfo.website && <span className="text-gray-400">|</span>}
-              {personalInfo.website && <span>{personalInfo.website}</span>}
+            <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-900">
+              {personalInfo.phone && <span className="flex items-center gap-1">📞 {personalInfo.phone}</span>}
+              {personalInfo.email && <span className="flex items-center gap-1">✉️ {personalInfo.email}</span>}
+              {personalInfo.linkedin && <span className="flex items-center gap-1">🔗 {personalInfo.linkedin.replace(/^https?:\/\//, '')}</span>}
+              {personalInfo.website && <span className="flex items-center gap-1">🌐 {personalInfo.website.replace(/^https?:\/\//, '')}</span>}
             </div>
           </div>
 
           {/* Summary */}
           {personalInfo.summary && (
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-gray-800 uppercase border-b border-gray-300 mb-3 pb-1">Professional Summary</h2>
-              <p className="text-gray-700 leading-relaxed text-sm text-justify">{personalInfo.summary}</p>
+            <div className="mb-4">
+              <p className="text-gray-900 leading-relaxed text-sm text-justify">{personalInfo.summary}</p>
             </div>
           )}
 
@@ -574,16 +567,18 @@ export default function ResumeBuilder() {
             switch(sectionId) {
               case 'education':
                 return education.length > 0 && (
-                  <div key="education" className="mb-6">
-                    <h2 className="text-lg font-bold text-gray-800 uppercase border-b border-gray-300 mb-3 pb-1">Education</h2>
-                    <div className="space-y-3">
+                  <div key="education" className="mb-4">
+                    <h2 className="text-base font-bold text-gray-900 uppercase border-b border-gray-900 mb-2">Education</h2>
+                    <div className="space-y-2">
                       {education.map((edu, idx) => (
-                        <div key={idx} className="flex justify-between items-baseline">
-                          <div>
-                            <h3 className="font-bold text-gray-800">{edu.school}</h3>
-                            <p className="text-sm text-gray-700">{edu.degree}</p>
+                        <div key={idx}>
+                          <div className="flex justify-between items-baseline">
+                            <h3 className="font-bold text-gray-900">{edu.school}</h3>
+                            <span className="font-bold text-gray-900">{edu.year}</span>
                           </div>
-                          <span className="text-sm text-gray-600">{edu.year}</span>
+                          <div className="flex justify-between items-baseline">
+                            <p className="italic text-gray-900">{edu.degree}</p>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -592,17 +587,23 @@ export default function ResumeBuilder() {
               
               case 'experience':
                 return experiences.length > 0 && (
-                  <div key="experience" className="mb-6">
-                    <h2 className="text-lg font-bold text-gray-800 uppercase border-b border-gray-300 mb-3 pb-1">Experience</h2>
-                    <div className="space-y-4">
+                  <div key="experience" className="mb-4">
+                    <h2 className="text-base font-bold text-gray-900 uppercase border-b border-gray-900 mb-2">Work Experience</h2>
+                    <div className="space-y-3">
                       {experiences.map((exp, idx) => (
                         <div key={idx}>
-                          <div className="flex justify-between items-baseline mb-1">
-                            <h3 className="font-bold text-gray-800">{exp.role}</h3>
-                            <span className="text-sm text-gray-600 whitespace-nowrap">{exp.duration}</span>
+                          <div className="flex justify-between items-baseline">
+                            <h3 className="font-bold text-gray-900">{exp.company}</h3>
+                            <span className="font-bold text-gray-900">{exp.duration}</span>
                           </div>
-                          <div className="text-sm font-semibold text-gray-700 mb-1">{exp.company}</div>
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{exp.description}</p>
+                          <div className="flex justify-between items-baseline mb-1">
+                            <p className="italic text-gray-900">{exp.role}</p>
+                          </div>
+                          <ul className="list-disc list-outside ml-4 text-sm text-gray-900 space-y-1">
+                            {exp.description.split('\\n').filter(line => line.trim()).map((line, i) => (
+                              <li key={i}>{line.trim().replace(/^[-•]\\s*/, '')}</li>
+                            ))}
+                          </ul>
                         </div>
                       ))}
                     </div>
@@ -611,17 +612,21 @@ export default function ResumeBuilder() {
 
               case 'projects':
                 return projects.length > 0 && (
-                  <div key="projects" className="mb-6">
-                    <h2 className="text-lg font-bold text-gray-800 uppercase border-b border-gray-300 mb-3 pb-1">Projects</h2>
-                    <div className="space-y-4">
+                  <div key="projects" className="mb-4">
+                    <h2 className="text-base font-bold text-gray-900 uppercase border-b border-gray-900 mb-2">Projects</h2>
+                    <div className="space-y-3">
                       {projects.map((proj, idx) => (
                         <div key={idx}>
-                          <div className="flex justify-between items-baseline mb-1">
-                            <h3 className="font-bold text-gray-800">{proj.name}</h3>
+                          <div className="flex justify-between items-baseline">
+                            <h3 className="font-bold text-gray-900">{proj.name}</h3>
+                            {proj.link && <a href={proj.link} className="text-gray-900 underline text-xs">{proj.link}</a>}
                           </div>
-                          <div className="text-sm font-medium text-gray-700 mb-1">{proj.technologies}</div>
-                          {proj.link && <div className="text-xs text-blue-600 mb-1">{proj.link}</div>}
-                          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{proj.description}</p>
+                          <div className="italic text-sm text-gray-900 mb-1">{proj.technologies}</div>
+                           <ul className="list-disc list-outside ml-4 text-sm text-gray-900 space-y-1">
+                            {proj.description.split('\\n').filter(line => line.trim()).map((line, i) => (
+                              <li key={i}>{line.trim().replace(/^[-•]\\s*/, '')}</li>
+                            ))}
+                          </ul>
                         </div>
                       ))}
                     </div>
@@ -630,15 +635,12 @@ export default function ResumeBuilder() {
 
               case 'skills':
                 return skills.length > 0 && (
-                  <div key="skills" className="mb-6">
-                    <h2 className="text-lg font-bold text-gray-800 uppercase border-b border-gray-300 mb-3 pb-1">Technical Skills</h2>
-                    <div className="flex flex-wrap gap-x-2 gap-y-1 text-sm text-gray-700">
-                      {skills.map((skill, idx) => (
-                        <span key={idx} className="bg-gray-100 px-2 py-1 rounded">
-                          {skill}
-                        </span>
-                      ))}
-                    </div>
+                  <div key="skills" className="mb-4">
+                     <h2 className="text-base font-bold text-gray-900 uppercase border-b border-gray-900 mb-2">Technical Skills</h2>
+                     <div className="text-sm text-gray-900">
+                        <span className="font-bold">Skills: </span>
+                        {skills.join(", ")}
+                     </div>
                   </div>
                 );
 
@@ -646,17 +648,17 @@ export default function ResumeBuilder() {
                 const customSection = customSections.find(s => s.id === sectionId);
                 if (customSection && customSection.entries.length > 0) {
                   return (
-                    <div key={customSection.id} className="mb-6">
-                      <h2 className="text-lg font-bold text-gray-800 uppercase border-b border-gray-300 mb-3 pb-1">{customSection.title}</h2>
-                      <div className="space-y-4">
+                    <div key={customSection.id} className="mb-4">
+                      <h2 className="text-base font-bold text-gray-900 uppercase border-b border-gray-900 mb-2">{customSection.title}</h2>
+                      <div className="space-y-2">
                         {customSection.entries.map((entry, idx) => (
                           <div key={idx}>
-                            <div className="flex justify-between items-baseline mb-1">
-                              <h3 className="font-bold text-gray-800">{entry.title}</h3>
-                              <span className="text-sm text-gray-600 whitespace-nowrap">{entry.date}</span>
+                            <div className="flex justify-between items-baseline">
+                              <h3 className="font-bold text-gray-900">{entry.title}</h3>
+                              <span className="font-bold text-gray-900">{entry.date}</span>
                             </div>
-                            {entry.subtitle && <div className="text-sm font-semibold text-gray-700 mb-1">{entry.subtitle}</div>}
-                            <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{entry.description}</p>
+                            {entry.subtitle && <div className="italic text-sm text-gray-900 mb-1">{entry.subtitle}</div>}
+                            <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">{entry.description}</p>
                           </div>
                         ))}
                       </div>
