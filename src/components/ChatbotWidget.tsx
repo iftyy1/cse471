@@ -86,7 +86,7 @@ export default function ChatbotWidget() {
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-gray-500 text-center p-6">
             <div className="text-5xl mb-4">👋</div>
-            <h4 className="text-xl font-medium text-gray-700 mb-2">Hi! I'm your study assistant.</h4>
+            <h4 className="text-xl font-medium text-gray-700 mb-2"> Hi! I&apos;m your study assistant. </h4>
             <p className="max-w-xs mx-auto">Ask me about your coursework, request practice problems, or get help with difficult concepts.</p>
             
             <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-2 w-full max-w-md">

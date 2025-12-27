@@ -40,19 +40,19 @@ export default function TutorDashboard() {
     try {
       const userStr = localStorage.getItem("user");
       const token = localStorage.getItem("token");
-      
+
       if (!userStr || !token) {
         router.push("/login");
         return;
       }
-      
+
       const user = JSON.parse(userStr);
 
       // 1. Get my tutor profiles
       const tutorRes = await fetch(`/api/tutors?user_id=${user.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (tutorRes.ok) {
         const tutorsData = await tutorRes.json();
         // Filter out mock data if returned (mock data has createdBy undefined or specific IDs usually)
@@ -63,7 +63,7 @@ export default function TutorDashboard() {
         // Actually the API logic is: if result.rows > 0 return DB rows. Else return Mock.
         // So if we have no tutor profile, we might get mock data.
         // We should check createdBy.
-        
+
         const myTutors = Array.isArray(tutorsData) ? tutorsData.filter((t: any) => t.createdBy === user.id) : [];
         setTutors(myTutors);
 
@@ -148,8 +148,8 @@ export default function TutorDashboard() {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <h1 className="text-3xl font-bold mb-4">Tutor Dashboard</h1>
-        <p className="mb-6 text-gray-600">You haven't created a tutor profile yet.</p>
-        <button 
+        <p className="mb-6 text-gray-600">You havent created a tutor profile yet.</p>
+        <button
           onClick={() => router.push("/tutors/create")} // Assuming this exists or will be created? Or just /tutors and a "Become a Tutor" button?
           // Actually /tutors usually has a "Become a Tutor" button that opens a modal or form.
           // Let's redirect to /tutors for now.
@@ -164,12 +164,12 @@ export default function TutorDashboard() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">Tutor Dashboard</h1>
-      
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Booking Requests</h2>
         </div>
-        
+
         {bookings.length === 0 ? (
           <div className="p-6 text-center text-gray-500">No bookings yet.</div>
         ) : (
@@ -199,27 +199,27 @@ export default function TutorDashboard() {
                     <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">${booking.total}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${booking.status === 'accepted' ? 'bg-green-100 text-green-800' : 
-                          booking.status === 'rejected' ? 'bg-red-100 text-red-800' : 
-                          'bg-yellow-100 text-yellow-800'}`}>
+                        ${booking.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                          booking.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'}`}>
                         {booking.status}
                       </span>
                       {booking.meet_link && (
                         <div className="text-xs text-blue-500 mt-1 max-w-[150px] truncate">
-                            <a href={booking.meet_link} target="_blank" rel="noopener noreferrer">Link</a>
+                          <a href={booking.meet_link} target="_blank" rel="noopener noreferrer">Link</a>
                         </div>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {booking.status === 'pending' && (
                         <div className="flex gap-2">
-                          <button 
+                          <button
                             onClick={() => handleAccept(booking)}
                             className="text-green-600 hover:text-green-900"
                           >
                             Accept
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleReject(booking.id)}
                             className="text-red-600 hover:text-red-900"
                           >
@@ -228,7 +228,7 @@ export default function TutorDashboard() {
                         </div>
                       )}
                       {booking.status === 'accepted' && (
-                        <button 
+                        <button
                           onClick={() => handleAccept(booking)} // Re-open modal to edit link
                           className="text-blue-600 hover:text-blue-900"
                         >
@@ -260,13 +260,13 @@ export default function TutorDashboard() {
               className="w-full border p-2 rounded mb-4 text-gray-900 dark:text-white bg-transparent dark:border-gray-600"
             />
             <div className="flex justify-end gap-2">
-              <button 
+              <button
                 onClick={() => setModalOpen(false)}
                 className="px-4 py-2 border rounded hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={confirmAccept}
                 disabled={updating}
                 className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
