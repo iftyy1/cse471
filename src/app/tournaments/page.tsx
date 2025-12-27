@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { tournamentsData, TournamentStatus } from "@/lib/data";
+import { tournamentsData, TournamentStatus, Tournament } from "@/lib/data";
 
 export default function TournamentPage() {
   const router = useRouter();
@@ -10,7 +10,7 @@ export default function TournamentPage() {
   const [joined, setJoined] = useState<Record<number, boolean>>({});
   const [filter, setFilter] = useState<TournamentStatus | "All">("All");
   const [showAddModal, setShowAddModal] = useState(false);
-  const [tournaments, setTournaments] = useState<any[]>([]);
+  const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [token, setToken] = useState<string | null>(null);
 
