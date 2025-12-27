@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     let studentId = null;
 
     if (user) {
-        studentName = user.name;
+        studentName = user.name || studentName;
         studentId = user.id;
     }
 

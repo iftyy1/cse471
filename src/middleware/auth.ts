@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
-import { verifyToken } from '@/lib/auth';
+import { verifyToken, User } from '@/lib/auth';
 
-export function getAuthUser(request: NextRequest): { id: number; email: string; role: string } | null {
+export function getAuthUser(request: NextRequest): User | null {
   const authHeader = request.headers.get('authorization');
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -14,7 +14,7 @@ export function getAuthUser(request: NextRequest): { id: number; email: string; 
   return user;
 }
 
-export function requireAuth(request: NextRequest): { id: number; email: string; role: string } {
+export function requireAuth(request: NextRequest): User {
   const user = getAuthUser(request);
   
   if (!user) {
