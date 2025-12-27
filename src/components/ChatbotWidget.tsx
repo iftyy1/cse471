@@ -131,7 +131,7 @@ export default function ChatbotWidget() {
               }`}
             >
               {msg.role === "assistant" ? (
-                <div className="prose prose-sm max-w-none dark:prose-invert prose-p:my-1 prose-pre:bg-gray-100 prose-pre:p-2 prose-pre:rounded-lg">
+                <div className="prose prose-sm max-w-none prose-p:my-1 prose-pre:bg-gray-100 prose-pre:p-2 prose-pre:rounded-lg text-gray-900">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
                 </div>
               ) : (
@@ -163,7 +163,7 @@ export default function ChatbotWidget() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
-            className="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="flex-1 p-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-gray-900 bg-white"
             placeholder="Type your question..."
             style={{ minHeight: '50px', maxHeight: '120px' }}
           />

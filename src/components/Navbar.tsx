@@ -77,7 +77,8 @@ export default function Navbar() {
         { href: "/chat", label: "Global Chat" },
         { href: "/chatbot", label: "AI Tutor" },
         { href: "/tournaments", label: "Tournaments" },
-        { href: "/notes", label: "Notes and Tutorials" }
+        { href: "/notes", label: "Notes and Tutorials" },
+        { href: "/polls", label: "Polls & Surveys" }
       ]
     },
     { 

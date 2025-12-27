@@ -198,6 +198,34 @@ export async function initializeDatabase() {
       )
     `);
 
+    // Create polls table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS polls (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        options JSONB NOT NULL, -- Array of {id: string, text: string}
+        start_date TIMESTAMP,
+        end_date TIMESTAMP,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create poll_votes table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS poll_votes (
+        id SERIAL PRIMARY KEY,
+        poll_id INTEGER REFERENCES polls(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        option_id VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(poll_id, user_id)
+      )
+    `);
+
     // Create lost_found_items table
     await client.query(`
       CREATE TABLE IF NOT EXISTS lost_found_items (

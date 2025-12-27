@@ -15,24 +15,6 @@ export default function MarketplacePage() {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (!storedToken) {
-        router.push("/login?redirect=/marketplace");
-        return;
-    }
-    setToken(storedToken);
-    fetchListings().finally(() => setIsLoading(false));
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
   const fetchListings = async () => {
     try {
       const response = await fetch("/api/marketplace");
@@ -47,6 +29,16 @@ export default function MarketplacePage() {
       setListings(marketplaceListings);
     }
   };
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    if (!storedToken) {
+        router.push("/login?redirect=/marketplace");
+        return;
+    }
+    setToken(storedToken);
+    fetchListings().finally(() => setIsLoading(false));
+  }, []);
 
   const filteredListings = useMemo(() => {
     return listings.filter((listing) => {
@@ -114,6 +106,14 @@ export default function MarketplacePage() {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-6xl">

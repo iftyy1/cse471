@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import CreatePollModal from "@/components/CreatePollModal";
 
 interface StatCardsProps {
   stats: any;
@@ -27,6 +28,8 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isPollModalOpen, setIsPollModalOpen] = useState(false);
+  const [selectedPoll, setSelectedPoll] = useState(null);
 
   useEffect(() => {
     const userStr = localStorage.getItem("user");
@@ -66,6 +69,7 @@ export default function AdminDashboard() {
       case "projects": endpoint = "/api/projects"; break;
       case "tournaments": endpoint = "/api/tournaments"; break;
       case "lost-found": endpoint = "/api/lost-found"; break;
+      case "polls": endpoint = "/api/polls"; break;
     }
 
     if (endpoint) {
@@ -77,6 +81,8 @@ export default function AdminDashboard() {
           const json = await res.json();
           if (tab === "jobs" && json.jobs) {
             setData(json.jobs);
+          } else if (tab === "polls" && json.polls) {
+            setData(json.polls);
           } else {
             setData(json);
           }
@@ -103,6 +109,7 @@ export default function AdminDashboard() {
     else if (activeTab === 'projects') endpoint = `/api/projects/${id}`;
     else if (activeTab === 'tournaments') endpoint = `/api/tournaments/${id}`;
     else if (activeTab === 'lost-found') endpoint = `/api/lost-found/${id}`;
+    else if (activeTab === 'polls') endpoint = `/api/polls/${id}`;
 
     if (endpoint) {
       const res = await fetch(endpoint, {
@@ -148,9 +155,9 @@ export default function AdminDashboard() {
       
       <StatCards stats={stats} />
 
-      <div className="mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <div className="mb-6 border-b border-gray-200 dark:border-gray-700 overflow-x-auto flex justify-between items-center">
         <nav className="-mb-px flex space-x-8">
-          {['users', 'posts', 'jobs', 'market', 'tutors', 'projects', 'tournaments', 'lost-found'].map((tab) => (
+          {['users', 'posts', 'jobs', 'market', 'tutors', 'projects', 'tournaments', 'lost-found', 'polls'].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -164,7 +171,22 @@ export default function AdminDashboard() {
             </button>
           ))}
         </nav>
+        {activeTab === 'polls' && (
+          <button
+            onClick={() => { setSelectedPoll(null); setIsPollModalOpen(true); }}
+            className="ml-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm font-medium"
+          >
+            + Create Poll
+          </button>
+        )}
       </div>
+
+      <CreatePollModal 
+        isOpen={isPollModalOpen} 
+        onClose={() => { setIsPollModalOpen(false); setSelectedPoll(null); }} 
+        onCreated={() => fetchData('polls')} 
+        poll={selectedPoll}
+      />
 
       {loading ? (
         <div>Loading...</div>
@@ -241,6 +263,15 @@ export default function AdminDashboard() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Title</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Location</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                  </>
+                )}
+                {activeTab === 'polls' && (
+                  <>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Created By</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
                   </>
                 )}
@@ -342,6 +373,27 @@ export default function AdminDashboard() {
                       <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">{item.location}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button onClick={() => handleDelete(item.id, 'lost-found')} className="text-red-600 hover:text-red-900">Delete</button>
+                      </td>
+                    </>
+                  )}
+                  {activeTab === 'polls' && (
+                    <>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-900 dark:text-white">{item.id}</td>
+                      <td className="px-6 py-4 text-gray-900 dark:text-white">{item.title}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {item.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-500 dark:text-gray-400">{item.created_by_name || 'Admin'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <button 
+                          onClick={() => { setSelectedPoll(item); setIsPollModalOpen(true); }} 
+                          className="text-blue-600 hover:text-blue-900 mr-2"
+                        >
+                          Edit
+                        </button>
+                        <button onClick={() => handleDelete(item.id, 'polls')} className="text-red-600 hover:text-red-900">Delete</button>
                       </td>
                     </>
                   )}
