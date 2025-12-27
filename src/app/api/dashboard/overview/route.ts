@@ -3,6 +3,8 @@ import { requireAuth } from "@/middleware/auth";
 import { getUserById } from "@/lib/auth";
 import { getDashboardOverviewPayload } from "@/lib/data";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const authUser = requireAuth(request);

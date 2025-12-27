@@ -10,6 +10,8 @@ import {
   saveDashboardPreferencesForUser,
 } from "@/lib/data";
 
+export const dynamic = 'force-dynamic';
+
 function isValidWidgetOrder(order: unknown): order is string[] {
   return (
     Array.isArray(order) &&
